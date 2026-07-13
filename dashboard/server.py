@@ -212,6 +212,12 @@ class Handler(SimpleHTTPRequestHandler):
             self.json({"error": "데이터를 불러오지 못했습니다.", "detail": str(error)}, 502)
 
 
+# Vercel Python runtime entrypoint. Locally, the same Handler remains a normal
+# threaded HTTP server; on Vercel it serves both static assets and /api/*.
+class handler(Handler):
+    pass
+
+
 if __name__ == "__main__":
     server = ThreadingHTTPServer(("127.0.0.1", 8787), Handler)
     print("Interest Hub running at http://127.0.0.1:8787")
