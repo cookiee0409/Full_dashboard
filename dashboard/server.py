@@ -21,7 +21,12 @@ def cached(key: str, ttl: int, loader):
     item = CACHE.get(key)
     if item and time.time() - item[0] < ttl:
         return item[1]
-    value = loader()
+    try:
+        value = loader()
+    except Exception:
+        if item:
+            return item[1]
+        raise
     CACHE[key] = (time.time(), value)
     return value
 
@@ -32,18 +37,35 @@ def fetch_json(url: str):
         return json.loads(response.read().decode("utf-8"))
 
 
+LAST_GOOD: dict[str, dict] = {}
+
+
 def yahoo(symbol: str):
     url = "https://query1.finance.yahoo.com/v8/finance/chart/" + quote(symbol) + "?range=8d&interval=1d"
     result = fetch_json(url)["chart"]["result"][0]
     meta, quote_data = result["meta"], result["indicators"]["quote"][0]
     closes = [v for v in quote_data.get("close", []) if v is not None]
     price = meta.get("regularMarketPrice") or (closes[-1] if closes else 0)
-    previous = meta.get("chartPreviousClose") or meta.get("previousClose") or price
+    previous = (meta.get("regularMarketPreviousClose") or meta.get("previousClose")
+                or (closes[-2] if len(closes) > 1 else None) or price)
     change = price - previous
-    return {"symbol": symbol, "name": meta.get("shortName") or symbol, "price": price,
+    item = {"symbol": symbol, "name": meta.get("shortName") or symbol, "price": price,
             "change": change, "changePct": (change / previous * 100) if previous else 0,
             "currency": meta.get("currency", "USD"), "spark": closes[-7:],
             "marketState": meta.get("marketState", ""), "marketCap": market_cap(symbol)}
+    LAST_GOOD[symbol] = item
+    return item
+
+
+def safe_yahoo(symbol: str, label: str | None = None):
+    try:
+        item = yahoo(symbol)
+    except Exception as error:
+        stale = LAST_GOOD.get(symbol)
+        item = {**stale, "stale": True} if stale else {"symbol": symbol, "name": label or symbol, "error": str(error)}
+    if label:
+        item["name"] = label
+    return item
 
 
 def market_cap(symbol: str):
@@ -57,7 +79,7 @@ def market_cap(symbol: str):
     try:
         url = ("https://query1.finance.yahoo.com/ws/fundamentals-timeseries/v1/finance/timeseries/"
                + quote(symbol) + "?symbol=" + quote(symbol)
-               + "&type=trailingMarketCap&period1=1700000000&period2=1800000000")
+               + "&type=trailingMarketCap&period1=1700000000&period2=" + str(int(time.time()) + 86400))
         series = fetch_json(url)["timeseries"]["result"][0].get("trailingMarketCap", [])
         value = series[-1]["reportedValue"]["raw"] if series else None
     except Exception:
@@ -69,21 +91,18 @@ def market_cap(symbol: str):
 def market_data():
     definitions = [("KOSPI", "^KS11"), ("KOSDAQ", "^KQ11"), ("S&P 500", "^GSPC"),
                    ("NASDAQ", "^IXIC"), ("USD/KRW", "KRW=X"), ("Gold", "GC=F")]
-    items = []
-    for label, symbol in definitions:
-        try:
-            item = yahoo(symbol)
-            item["name"] = label
-            items.append(item)
-        except Exception as error:
-            items.append({"name": label, "symbol": symbol, "error": str(error)})
+    items = [safe_yahoo(symbol, label) for label, symbol in definitions]
     try:
         coins = fetch_json("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd,krw&include_24hr_change=true")
         for coin, label in (("bitcoin", "BTC"), ("ethereum", "ETH")):
-            items.append({"name": label, "symbol": coin, "price": coins[coin]["usd"], "currency": "USD",
-                          "changePct": coins[coin].get("usd_24h_change", 0), "change": 0})
+            item = {"name": label, "symbol": coin, "price": coins[coin]["usd"], "currency": "USD",
+                     "changePct": coins[coin].get("usd_24h_change", 0), "change": 0}
+            LAST_GOOD["coin:" + coin] = item
+            items.append(item)
     except Exception as error:
-        items.extend([{"name": "BTC", "error": str(error)}, {"name": "ETH", "error": str(error)}])
+        for coin, label in (("bitcoin", "BTC"), ("ethereum", "ETH")):
+            stale = LAST_GOOD.get("coin:" + coin)
+            items.append({**stale, "stale": True} if stale else {"name": label, "error": str(error)})
     return {"items": items, "updatedAt": int(time.time())}
 
 
@@ -119,17 +138,34 @@ def meme_chains():
         for chain in chains:
             groups.setdefault(chain, []).append(coin)
     chain_names = sorted(top_chain_ids, key=lambda chain: (-len(groups.get(chain, [])), chain))
-    result = {"items": items[:30], "chains": [{"id": chain, "name": chain.replace("-", " ").title(),
-                                                   "count": len(groups.get(chain, [])),
-                                                   "items": groups.get(chain, [])[:20]}
-                                                for chain in chain_names], "updatedAt": int(time.time())}
+    radar_pool = [c for c in items if (c.get("marketCap") or 0) >= 5_000_000]
+    radar = sorted(radar_pool, key=lambda c: abs(c.get("change24") or 0), reverse=True)[:10]
+    result = {"items": items[:30], "radar": radar,
+              "chains": [{"id": chain, "name": chain.replace("-", " ").title(),
+                          "count": len(groups.get(chain, [])),
+                          "items": groups.get(chain, [])[:20]}
+                         for chain in chain_names], "updatedAt": int(time.time())}
     CACHE[key] = (time.time(), result)
     return result
+
+
+NAVER_MARKET_SUFFIX = {"KOSPI": ".KS", "KOSDAQ": ".KQ"}
+
+
+def stock_search_kr(query: str):
+    """Yahoo's search endpoint rejects Hangul queries with 400; Naver's autocomplete handles them."""
+    url = "https://ac.stock.naver.com/ac?q=" + quote(query) + "&target=stock,index"
+    items = fetch_json(url).get("items", [])
+    return {"items": [{"symbol": it["code"] + NAVER_MARKET_SUFFIX.get(it.get("typeCode", ""), ""),
+                        "name": it.get("name", it["code"]), "exchange": it.get("typeName", ""), "type": "EQUITY"}
+                       for it in items if it.get("code")]}
 
 
 def stock_search(query: str):
     if len(query.strip()) < 2:
         return {"items": []}
+    if re.search(r"[가-힣]", query):
+        return stock_search_kr(query)
     url = "https://query1.finance.yahoo.com/v1/finance/search?q=" + quote(query) + "&quotesCount=12&newsCount=0"
     quotes = fetch_json(url).get("quotes", [])
     return {"items": [{"symbol": q.get("symbol"), "name": q.get("longname") or q.get("shortname") or q.get("symbol"),
@@ -139,13 +175,18 @@ def stock_search(query: str):
 
 def stocks_data(symbols: list[str]):
     with ThreadPoolExecutor(max_workers=min(8, len(symbols) or 1)) as executor:
-        items = list(executor.map(yahoo, symbols))
+        items = list(executor.map(safe_yahoo, symbols))
     return {"items": items, "updatedAt": int(time.time())}
+
+
+FEAR_GREED_LABELS_KO = {"Extreme Fear": "극공포", "Fear": "공포", "Neutral": "중립",
+                         "Greed": "탐욕", "Extreme Greed": "극탐욕"}
 
 
 def fear_greed():
     data = fetch_json("https://api.alternative.me/fng/?limit=1&format=json")["data"][0]
-    return {"value": int(data["value"]), "label": data["value_classification"], "updatedAt": int(time.time())}
+    label = data["value_classification"]
+    return {"value": int(data["value"]), "label": FEAR_GREED_LABELS_KO.get(label, label), "updatedAt": int(time.time())}
 
 
 def news(query: str, limit: int = 9):
