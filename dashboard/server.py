@@ -15,6 +15,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).parent
 CACHE: dict[str, tuple[float, object]] = {}
 UA = "InterestHubEconomy/1.0 (+local dashboard)"
+NAVER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
 
 
 def cached(key: str, ttl: int, loader):
@@ -31,35 +32,155 @@ def cached(key: str, ttl: int, loader):
     return value
 
 
-def fetch_json(url: str):
-    request = Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
-    with urlopen(request, timeout=12) as response:
-        return json.loads(response.read().decode("utf-8"))
+def fetch_json(url: str, ua: str = UA):
+    request = Request(url, headers={"User-Agent": ua, "Accept": "application/json"})
+    try:
+        with urlopen(request, timeout=8) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except Exception:
+        time.sleep(0.5)
+        with urlopen(request, timeout=8) as response:
+            return json.loads(response.read().decode("utf-8"))
 
 
 LAST_GOOD: dict[str, dict] = {}
 
 
-def yahoo(symbol: str):
-    url = "https://query1.finance.yahoo.com/v8/finance/chart/" + quote(symbol) + "?range=8d&interval=1d"
+def _parse_yahoo_history(result: dict):
+    """Turns a Yahoo chart response into null-free, index-aligned OHLCV series
+    for the candlestick chart (dates use the exchange's local calendar day)."""
+    timestamps = result.get("timestamp") or []
+    quote_data = (result.get("indicators", {}).get("quote") or [{}])[0]
+    closes_raw = quote_data.get("close", [])
+    opens_raw = quote_data.get("open", [])
+    highs_raw = quote_data.get("high", [])
+    lows_raw = quote_data.get("low", [])
+    volumes_raw = quote_data.get("volume", [])
+    dates, opens, highs, lows, closes, volumes = [], [], [], [], [], []
+    for i, ts in enumerate(timestamps):
+        close = closes_raw[i] if i < len(closes_raw) else None
+        if close is None:
+            continue
+        dates.append(datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d"))
+        opens.append(opens_raw[i] if i < len(opens_raw) else None)
+        highs.append(highs_raw[i] if i < len(highs_raw) else None)
+        lows.append(lows_raw[i] if i < len(lows_raw) else None)
+        closes.append(close)
+        volumes.append(volumes_raw[i] if i < len(volumes_raw) else None)
+    return {"dates": dates, "open": opens, "high": highs, "low": lows, "close": closes, "volume": volumes}
+
+
+def yahoo_history_full(symbol: str, range_: str = "3mo"):
+    url = "https://query1.finance.yahoo.com/v8/finance/chart/" + quote(symbol) + f"?range={range_}&interval=1d"
     result = fetch_json(url)["chart"]["result"][0]
-    meta, quote_data = result["meta"], result["indicators"]["quote"][0]
-    closes = [v for v in quote_data.get("close", []) if v is not None]
+    return _parse_yahoo_history(result)
+
+
+def yahoo(symbol: str):
+    url = "https://query1.finance.yahoo.com/v8/finance/chart/" + quote(symbol) + "?range=3mo&interval=1d"
+    result = fetch_json(url)["chart"]["result"][0]
+    meta = result["meta"]
+    history = _parse_yahoo_history(result)
+    closes = history["close"]
     price = meta.get("regularMarketPrice") or (closes[-1] if closes else 0)
     previous = (meta.get("regularMarketPreviousClose") or meta.get("previousClose")
                 or (closes[-2] if len(closes) > 1 else None) or price)
     change = price - previous
     item = {"symbol": symbol, "name": meta.get("shortName") or symbol, "price": price,
             "change": change, "changePct": (change / previous * 100) if previous else 0,
-            "currency": meta.get("currency", "USD"), "spark": closes[-7:],
+            "currency": meta.get("currency", "USD"), "spark": closes[-7:], "history": history,
             "marketState": meta.get("marketState", ""), "marketCap": market_cap(symbol)}
     LAST_GOOD[symbol] = item
     return item
 
 
-def safe_yahoo(symbol: str, label: str | None = None):
+KR_STOCK_RE = re.compile(r"^(\d{6})\.(KS|KQ)$")
+NAVER_INDEX_NAME = {"^KS11": "KOSPI", "^KQ11": "KOSDAQ"}
+
+
+def naver_num(value):
+    if value is None or value == "" or value == "N/A":
+        return None
     try:
-        item = yahoo(symbol)
+        return float(str(value).replace(",", ""))
+    except ValueError:
+        return None
+
+
+def naver_quote_from_payload(payload: dict, symbol: str):
+    """Yahoo's KR previous-close metadata is wrong (see market_data/1-A finding),
+    so KR price/change/market-cap comes from Naver; only the close-price history
+    (for sparklines/charts) still comes from Yahoo, which is accurate."""
+    sign = {"RISING": 1, "FALLING": -1}.get((payload.get("compareToPreviousPrice") or {}).get("name"), 0)
+    change_abs = naver_num(payload.get("compareToPreviousClosePrice")) or 0
+    pct_abs = naver_num(payload.get("fluctuationsRatio")) or 0
+    market_value = naver_num(payload.get("marketValue"))
+    try:
+        history = yahoo_history_full(symbol)
+    except Exception:
+        history = {"dates": [], "open": [], "high": [], "low": [], "close": [], "volume": []}
+    item = {"symbol": symbol, "name": payload.get("stockName") or symbol,
+            "price": naver_num(payload.get("closePrice")),
+            "change": change_abs * sign, "changePct": pct_abs * sign, "currency": "KRW",
+            "spark": history["close"][-7:], "history": history, "marketState": payload.get("marketStatus", ""),
+            "marketCap": market_value * 1e8 if market_value is not None else None,
+            "marketCapText": payload.get("marketValueHangeul")}
+    LAST_GOOD[symbol] = item
+    return item
+
+
+KR_WON_UNIT = {"조": 1e12, "억": 1e8, "만": 1e4}
+
+
+def parse_kr_won(text: str | None):
+    if not text:
+        return None
+    parts = re.findall(r"([\d,.]+)\s*(조|억|만)", text)
+    if not parts:
+        return naver_num(text.replace("원", ""))
+    return sum(float(num.replace(",", "")) * KR_WON_UNIT[unit] for num, unit in parts)
+
+
+def naver_stock(symbol: str):
+    """The /basic endpoint has no market-cap field (only Naver's marketValue *list*
+    endpoint does, used by kr_top10); individual lookups need /integration instead."""
+    code = KR_STOCK_RE.match(symbol).group(1)
+    payload = fetch_json(f"https://m.stock.naver.com/api/stock/{code}/basic", NAVER_UA)
+    item = naver_quote_from_payload(payload, symbol)
+    if item.get("marketCap") is None:
+        try:
+            info = fetch_json(f"https://m.stock.naver.com/api/stock/{code}/integration", NAVER_UA)
+            market_text = next((t["value"] for t in info.get("totalInfos", []) if t.get("code") == "marketValue"), None)
+            item["marketCap"] = parse_kr_won(market_text)
+            item["marketCapText"] = market_text + "원" if market_text and not market_text.endswith("원") else market_text
+            LAST_GOOD[symbol] = item
+        except Exception:
+            pass
+    return item
+
+
+def naver_index(symbol: str):
+    payload = fetch_json(f"https://m.stock.naver.com/api/index/{NAVER_INDEX_NAME[symbol]}/basic", NAVER_UA)
+    return naver_quote_from_payload(payload, symbol)
+
+
+def kr_top10():
+    kospi = fetch_json("https://m.stock.naver.com/api/stocks/marketValue/KOSPI?page=1&pageSize=10", NAVER_UA)["stocks"]
+    kosdaq = fetch_json("https://m.stock.naver.com/api/stocks/marketValue/KOSDAQ?page=1&pageSize=10", NAVER_UA)["stocks"]
+    pool = [(s, ".KS") for s in kospi] + [(s, ".KQ") for s in kosdaq]
+    pool.sort(key=lambda pair: naver_num(pair[0].get("marketValue")) or 0, reverse=True)
+    items = [naver_quote_from_payload(stock, stock["itemCode"] + suffix) for stock, suffix in pool[:10]]
+    return {"items": items, "updatedAt": int(time.time())}
+
+
+def safe_quote(symbol: str, label: str | None = None):
+    try:
+        if symbol in NAVER_INDEX_NAME:
+            item = naver_index(symbol)
+        elif KR_STOCK_RE.match(symbol):
+            item = naver_stock(symbol)
+        else:
+            item = yahoo(symbol)
     except Exception as error:
         stale = LAST_GOOD.get(symbol)
         item = {**stale, "stale": True} if stale else {"symbol": symbol, "name": label or symbol, "error": str(error)}
@@ -91,7 +212,7 @@ def market_cap(symbol: str):
 def market_data():
     definitions = [("KOSPI", "^KS11"), ("KOSDAQ", "^KQ11"), ("S&P 500", "^GSPC"),
                    ("NASDAQ", "^IXIC"), ("USD/KRW", "KRW=X"), ("Gold", "GC=F")]
-    items = [safe_yahoo(symbol, label) for label, symbol in definitions]
+    items = [safe_quote(symbol, label) for label, symbol in definitions]
     try:
         coins = fetch_json("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd,krw&include_24hr_change=true")
         for coin, label in (("bitcoin", "BTC"), ("ethereum", "ETH")):
@@ -106,6 +227,17 @@ def market_data():
     return {"items": items, "updatedAt": int(time.time())}
 
 
+def _load_json_asset(name: str) -> dict:
+    path = ROOT / name
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+TWITTER_HANDLES = _load_json_asset("twitter_handles.json")
+
+
 def coins_market(category: str | None = None, per_page: int = 30):
     url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=" + str(per_page) + "&page=1&sparkline=true&price_change_percentage=24h,7d"
     if category and category != "all":
@@ -116,35 +248,50 @@ def coins_market(category: str | None = None, per_page: int = 30):
                         "change24": c.get("price_change_percentage_24h_in_currency") or c.get("price_change_percentage_24h") or 0,
                         "change7": c.get("price_change_percentage_7d_in_currency") or 0,
                         "marketCap": c.get("market_cap"), "volume": c.get("total_volume"),
-                        "spark": (c.get("sparkline_in_7d") or {}).get("price", [])[-30:]}
+                        "twitter": TWITTER_HANDLES.get(c["id"]),
+                        "spark": (c.get("sparkline_in_7d") or {}).get("price", [])}
                        for c in data], "updatedAt": int(time.time())}
 
 
+GMGN_CHAIN_SLUG = {"solana": "sol", "ethereum": "eth", "binance-smart-chain": "bsc", "base": "base"}
+MEME_CHAIN_ORDER = [("solana", "Solana"), ("binance-smart-chain", "BSC"), ("robinhood", "Robinhood"),
+                    ("base", "Base"), ("ethereum", "Ethereum")]
+
+
+def gmgn_link(chain: str | None, address: str | None):
+    slug = GMGN_CHAIN_SLUG.get(chain)
+    return f"https://gmgn.ai/{slug}/token/{address}" if slug and address else None
+
+
 def meme_chains():
-    """Group the top meme-token universe by every CoinGecko platform (chain)."""
+    """Group the top meme-token universe by each coin's *primary* chain — the
+    first key CoinGecko lists under `platforms`, which matches its
+    asset_platform_id — so a multi-chain coin appears in exactly one tab
+    instead of every chain it happens to be bridged to."""
     key = "meme-chains"
     item = CACHE.get(key)
     if item and time.time() - item[0] < 600:
         return item[1]
-    platforms = cached("coin-platforms", 86400, lambda: fetch_json("https://api.coingecko.com/api/v3/coins/list?include_platform=true"))
-    platform_by_id = {coin["id"]: list((coin.get("platforms") or {}).keys()) for coin in platforms}
+    platform_list = cached("coin-platforms", 86400, lambda: fetch_json("https://api.coingecko.com/api/v3/coins/list?include_platform=true"))
+    primary_platform = {coin["id"]: next(iter((coin.get("platforms") or {}).items()), (None, None))
+                        for coin in platform_list}
     items = coins_market("meme-token", 250)["items"]
-    groups: dict[str, list[dict]] = {}
-    top_chain_ids = set()
-    for index, coin in enumerate(items):
-        chains = platform_by_id.get(coin["id"], [])
-        if index < 30:
-            top_chain_ids.update(chains)
-        for chain in chains:
-            groups.setdefault(chain, []).append(coin)
-    chain_names = sorted(top_chain_ids, key=lambda chain: (-len(groups.get(chain, [])), chain))
+    for coin in items:
+        chain, address = primary_platform.get(coin["id"], (None, None))
+        coin["chain"] = chain
+        coin["gmgn"] = gmgn_link(chain, address)
+    groups: dict[str | None, list[dict]] = {}
+    for coin in items:
+        groups.setdefault(coin["chain"], []).append(coin)
+    fixed_ids = {chain_id for chain_id, _ in MEME_CHAIN_ORDER}
+    etc_items = [coin for coin in items if coin["chain"] not in fixed_ids]
+    chains = [{"id": chain_id, "name": label, "count": len(groups.get(chain_id, [])),
+               "items": groups.get(chain_id, [])[:20]}
+              for chain_id, label in MEME_CHAIN_ORDER]
+    chains.append({"id": "etc", "name": "기타", "count": len(etc_items), "items": etc_items[:20]})
     radar_pool = [c for c in items if (c.get("marketCap") or 0) >= 5_000_000]
     radar = sorted(radar_pool, key=lambda c: abs(c.get("change24") or 0), reverse=True)[:10]
-    result = {"items": items[:30], "radar": radar,
-              "chains": [{"id": chain, "name": chain.replace("-", " ").title(),
-                          "count": len(groups.get(chain, [])),
-                          "items": groups.get(chain, [])[:20]}
-                         for chain in chain_names], "updatedAt": int(time.time())}
+    result = {"items": items[:30], "radar": radar, "chains": chains, "updatedAt": int(time.time())}
     CACHE[key] = (time.time(), result)
     return result
 
@@ -155,7 +302,7 @@ NAVER_MARKET_SUFFIX = {"KOSPI": ".KS", "KOSDAQ": ".KQ"}
 def stock_search_kr(query: str):
     """Yahoo's search endpoint rejects Hangul queries with 400; Naver's autocomplete handles them."""
     url = "https://ac.stock.naver.com/ac?q=" + quote(query) + "&target=stock,index"
-    items = fetch_json(url).get("items", [])
+    items = fetch_json(url, NAVER_UA).get("items", [])
     return {"items": [{"symbol": it["code"] + NAVER_MARKET_SUFFIX.get(it.get("typeCode", ""), ""),
                         "name": it.get("name", it["code"]), "exchange": it.get("typeName", ""), "type": "EQUITY"}
                        for it in items if it.get("code")]}
@@ -175,7 +322,7 @@ def stock_search(query: str):
 
 def stocks_data(symbols: list[str]):
     with ThreadPoolExecutor(max_workers=min(8, len(symbols) or 1)) as executor:
-        items = list(executor.map(safe_yahoo, symbols))
+        items = list(executor.map(safe_quote, symbols))
     return {"items": items, "updatedAt": int(time.time())}
 
 
@@ -189,11 +336,20 @@ def fear_greed():
     return {"value": int(data["value"]), "label": FEAR_GREED_LABELS_KO.get(label, label), "updatedAt": int(time.time())}
 
 
+def fetch_xml(url: str):
+    request = Request(url, headers={"User-Agent": UA})
+    try:
+        with urlopen(request, timeout=8) as response:
+            return ET.fromstring(response.read())
+    except Exception:
+        time.sleep(0.5)
+        with urlopen(request, timeout=8) as response:
+            return ET.fromstring(response.read())
+
+
 def news(query: str, limit: int = 9):
     url = "https://news.google.com/rss/search?q=" + quote(query) + "&hl=ko&gl=KR&ceid=KR:ko"
-    request = Request(url, headers={"User-Agent": UA})
-    with urlopen(request, timeout=12) as response:
-        root = ET.fromstring(response.read())
+    root = fetch_xml(url)
     items = []
     for item in root.findall("./channel/item")[:limit]:
         title = item.findtext("title", "")
@@ -211,11 +367,13 @@ class Handler(SimpleHTTPRequestHandler):
     def log_message(self, fmt, *args):
         print("[hub] " + fmt % args)
 
-    def json(self, data, status=200):
+    def json(self, data, status=200, ttl=0):
         encoded = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Cache-Control", "no-store")
+        cache_control = (f"public, max-age=0, s-maxage={ttl}, stale-while-revalidate=86400"
+                         if ttl and status == 200 else "no-store")
+        self.send_header("Cache-Control", cache_control)
         self.send_header("Content-Length", str(len(encoded)))
         self.end_headers()
         self.wfile.write(encoded)
@@ -226,29 +384,30 @@ class Handler(SimpleHTTPRequestHandler):
             return super().do_GET()
         params = parse_qs(parsed.query)
         try:
-            if parsed.path == "/api/market": data = cached("market", 300, market_data)
+            if parsed.path == "/api/market": data, ttl = cached("market", 300, market_data), 60
             elif parsed.path == "/api/coins":
                 category = params.get("category", ["all"])[0]
                 per_page = min(max(int(params.get("limit", [30])[0]), 1), 100)
-                data = cached(f"coins:{category}:{per_page}", 60 if category == "meme-token" else 300,
-                              lambda: coins_market(category, per_page))
-            elif parsed.path == "/api/fear-greed": data = cached("fear", 3600, fear_greed)
-            elif parsed.path == "/api/meme-chains": data = meme_chains()
+                ttl = 60 if category == "meme-token" else 300
+                data = cached(f"coins:{category}:{per_page}", ttl, lambda: coins_market(category, per_page))
+            elif parsed.path == "/api/fear-greed": data, ttl = cached("fear", 3600, fear_greed), 3600
+            elif parsed.path == "/api/meme-chains": data, ttl = meme_chains(), 300
+            elif parsed.path == "/api/kr-top10": data, ttl = cached("kr-top10", 300, kr_top10), 300
             elif parsed.path == "/api/stocks":
                 symbols = [x.upper() for x in params.get("symbols", [""])[0].split(",") if x][:12]
-                data = cached("stocks:" + ",".join(symbols), 60, lambda: stocks_data(symbols))
+                data, ttl = cached("stocks:" + ",".join(symbols), 60, lambda: stocks_data(symbols)), 60
             elif parsed.path == "/api/search-stocks":
                 query = params.get("q", [""])[0]
-                data = cached("search:" + query.lower(), 300, lambda: stock_search(query))
+                data, ttl = cached("search:" + query.lower(), 300, lambda: stock_search(query)), 300
             elif parsed.path == "/api/news":
                 kind = params.get("kind", ["stocks"])[0]
                 queries = {"stocks": "한국 증시 주식", "crypto": "암호화폐 비트코인", "world": "세계 경제 지정학 금리 유가"}
                 if kind not in queries: raise ValueError("Unknown news kind")
-                data = cached("news:" + kind, 600, lambda: news(queries[kind]))
+                data, ttl = cached("news:" + kind, 600, lambda: news(queries[kind])), 600
             elif parsed.path == "/api/ipo":
-                data = {"items": [], "updatedAt": int(time.time()), "notice": "공모주 수집기는 Phase 1.5에서 연결됩니다."}
+                data, ttl = {"items": [], "updatedAt": int(time.time()), "notice": "공모주 수집기는 Phase 1.5에서 연결됩니다."}, 3600
             else: return self.json({"error": "Not found"}, 404)
-            self.json(data)
+            self.json(data, ttl=ttl)
         except Exception as error:
             self.json({"error": "데이터를 불러오지 못했습니다.", "detail": str(error)}, 502)
 
