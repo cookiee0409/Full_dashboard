@@ -1,0 +1,9 @@
+{
+  "_comment": "실제 모니터링할 텔레그램 채널로 교체하세요. username은 t.me/<username>의 그 이름입니다.",
+  "channels": [
+    { "username": "example_crypto_channel", "label": "예시 크립토 채널", "category": "crypto",
+      "exclude_keywords": ["광고", "구독", "이벤트 안내", "제휴 문의"] },
+    { "username": "example_ai_video_channel", "label": "예시 AI 영상 채널", "category": "ai_video",
+      "exclude_keywords": ["광고"] }
+  ]
+}

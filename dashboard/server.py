@@ -13,6 +13,7 @@ from urllib.parse import parse_qs, quote, urlparse
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).parent
+PROJECT_ROOT = ROOT.parent
 CACHE: dict[str, tuple[float, object]] = {}
 UA = "InterestHubEconomy/1.0 (+local dashboard)"
 NAVER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
@@ -42,6 +43,14 @@ def fetch_json(url: str, ua: str = UA):
         time.sleep(0.5)
         with urlopen(request, timeout=8) as response:
             return json.loads(response.read().decode("utf-8"))
+
+
+def fetch_json_post(url: str, payload: dict, ua: str = UA):
+    body = json.dumps(payload).encode("utf-8")
+    request = Request(url, data=body, headers={"User-Agent": ua, "Content-Type": "application/json",
+                                                "Accept": "application/json"})
+    with urlopen(request, timeout=8) as response:
+        return json.loads(response.read().decode("utf-8"))
 
 
 LAST_GOOD: dict[str, dict] = {}
@@ -212,10 +221,74 @@ def market_cap(symbol: str):
     return value
 
 
+# HIP-3 builder-deployed perps live on separate "dex" instances; confirmed by
+# querying /info directly (see plan doc) rather than guessing symbol names.
+HYPERLIQUID_ASSETS = {
+    "HYPE": {"coin": "HYPE", "dex": "", "name": "HYPE"},
+    "SAMSUNG": {"coin": "xyz:SMSN", "dex": "xyz", "name": "Samsung (SMSN)"},
+    "SKHYNIX": {"coin": "xyz:SKHX", "dex": "xyz", "name": "SK Hynix (SKHX)"},
+    "LIT": {"coin": "hyna:LIT", "dex": "hyna", "name": "Lition (LIT)"},
+}
+HYPERLIQUID_COINGECKO_FALLBACK = {"HYPE": "hyperliquid", "LIT": "lition"}
+
+
+def hyperliquid_candles(coin: str, days: int = 365):
+    end = int(time.time() * 1000)
+    start = end - days * 86400000
+    rows = fetch_json_post("https://api.hyperliquid.xyz/info",
+                            {"type": "candleSnapshot", "req": {"coin": coin, "interval": "1d",
+                                                                "startTime": start, "endTime": end}})
+    dates, opens, highs, lows, closes, volumes = [], [], [], [], [], []
+    for row in rows or []:
+        dates.append(datetime.fromtimestamp(row["t"] / 1000, tz=timezone.utc).strftime("%Y-%m-%d"))
+        opens.append(float(row["o"])); highs.append(float(row["h"]))
+        lows.append(float(row["l"])); closes.append(float(row["c"])); volumes.append(float(row["v"]))
+    return {"dates": dates, "open": opens, "high": highs, "low": lows, "close": closes, "volume": volumes}
+
+
+def hyperliquid_quote(label: str):
+    asset = HYPERLIQUID_ASSETS[label]
+    key = "hl:" + label
+    try:
+        mids = fetch_json_post("https://api.hyperliquid.xyz/info",
+                                {"type": "allMids", **({"dex": asset["dex"]} if asset["dex"] else {})})
+        price = float(mids[asset["coin"]])
+        try:
+            history = hyperliquid_candles(asset["coin"])
+        except Exception:
+            history = {"dates": [], "open": [], "high": [], "low": [], "close": [], "volume": []}
+        closes = history["close"]
+        previous = closes[-2] if len(closes) > 1 else price
+        change = price - previous
+        item = {"symbol": label, "name": asset["name"], "price": price, "change": change,
+                "changePct": (change / previous * 100) if previous else 0, "currency": "USD",
+                "spark": closes[-7:], "history": history}
+        LAST_GOOD[key] = item
+        return item
+    except Exception:
+        gecko_id = HYPERLIQUID_COINGECKO_FALLBACK.get(label)
+        if gecko_id:
+            try:
+                data = fetch_json("https://api.coingecko.com/api/v3/simple/price?ids=" + gecko_id
+                                   + "&vs_currencies=usd&include_24hr_change=true")
+                empty_history = {"dates": [], "open": [], "high": [], "low": [], "close": [], "volume": []}
+                item = {"symbol": label, "name": asset["name"], "price": data[gecko_id]["usd"], "change": 0,
+                        "changePct": data[gecko_id].get("usd_24h_change", 0), "currency": "USD",
+                        "spark": [], "history": empty_history}
+                LAST_GOOD[key] = item
+                return item
+            except Exception:
+                pass
+        stale = LAST_GOOD.get(key)
+        return {**stale, "stale": True} if stale else {"symbol": label, "name": asset["name"], "error": "no data"}
+
+
 def market_data():
     definitions = [("KOSPI", "^KS11"), ("KOSDAQ", "^KQ11"), ("S&P 500", "^GSPC"),
                    ("NASDAQ", "^IXIC"), ("USD/KRW", "KRW=X"), ("Gold", "GC=F")]
     items = [safe_quote(symbol, label) for label, symbol in definitions]
+    for label in HYPERLIQUID_ASSETS:
+        items.append(hyperliquid_quote(label))
     try:
         coins = fetch_json("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd,krw&include_24hr_change=true")
         for coin, label in (("bitcoin", "BTC"), ("ethereum", "ETH")):
@@ -333,6 +406,67 @@ def meme_chains():
     return result
 
 
+def load_briefing() -> dict:
+    """Reads the briefing pipeline's output (see ../briefing/build.py). Returns
+    {} before the pipeline has ever run so callers can degrade gracefully."""
+    try:
+        return json.loads((PROJECT_ROOT / "data" / "briefing.json").read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+# DEX Screener's chainId strings differ from this file's CoinGecko-style chain
+# ids (used by GMGN_CHAIN_SLUG); map them so gmgn_link() keeps working.
+DEXSCREENER_CHAIN_MAP = {"solana": "solana", "base": "base", "bsc": "binance-smart-chain", "ethereum": "ethereum"}
+DEXSCREENER_CHAIN_PRIORITY = ["solana", "base", "bsc", "ethereum"]
+
+
+def dexscreener_pair(ticker: str):
+    """Best pair for a ticker: filter to the chain-priority order (Solana >
+    Base > BSC > ETH), then pick the highest-liquidity pair within that chain."""
+    data = fetch_json("https://api.dexscreener.com/latest/dex/search?q=" + quote(ticker))
+    pairs = [p for p in (data.get("pairs") or [])
+             if (p.get("baseToken", {}).get("symbol") or "").upper() == ticker.upper()]
+    if not pairs:
+        return None
+    liquidity = lambda p: float((p.get("liquidity") or {}).get("usd") or 0)
+    for chain in DEXSCREENER_CHAIN_PRIORITY:
+        chain_pairs = [p for p in pairs if p.get("chainId") == chain]
+        if chain_pairs:
+            return max(chain_pairs, key=liquidity)
+    return max(pairs, key=liquidity)
+
+
+def meme_mentions():
+    briefing = load_briefing()
+    section = briefing.get("meme_mentions") or {}
+    tickers = section.get("tickers") or []
+
+    def build(entry):
+        symbol = entry["ticker"]
+        base = {"id": f"mention:{symbol}", "symbol": symbol, "name": symbol,
+                "mentions": entry.get("mentions"), "sample_text": entry.get("sample_text"),
+                "sample_link": entry.get("sample_link"), "x_search": "https://x.com/search?q=%24" + quote(symbol),
+                "price": None, "change24": 0, "marketCap": None, "chain": None, "gmgn": None, "image": ""}
+        try:
+            pair = dexscreener_pair(symbol)
+        except Exception:
+            pair = None
+        if pair:
+            chain_id = DEXSCREENER_CHAIN_MAP.get(pair.get("chainId"), pair.get("chainId"))
+            base.update({"name": (pair.get("baseToken") or {}).get("name") or symbol,
+                        "price": float(pair["priceUsd"]) if pair.get("priceUsd") else None,
+                        "change24": (pair.get("priceChange") or {}).get("h24") or 0,
+                        "marketCap": pair.get("fdv") or pair.get("marketCap"), "chain": chain_id,
+                        "gmgn": gmgn_link(chain_id, (pair.get("baseToken") or {}).get("address")),
+                        "image": (pair.get("info") or {}).get("imageUrl", "")})
+        return base
+
+    with ThreadPoolExecutor(max_workers=min(8, len(tickers) or 1)) as executor:
+        items = list(executor.map(build, tickers))
+    return {"items": items, "status": section.get("status", "pending"), "updatedAt": int(time.time())}
+
+
 NAVER_MARKET_SUFFIX = {"KOSPI": ".KS", "KOSDAQ": ".KQ"}
 
 
@@ -417,6 +551,8 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+        if parsed.path.startswith("/data/"):
+            return self.serve_data_file(parsed.path)
         if not parsed.path.startswith("/api/"):
             return super().do_GET()
         params = parse_qs(parsed.query)
@@ -429,6 +565,7 @@ class Handler(SimpleHTTPRequestHandler):
                 data = cached(f"coins:{category}:{per_page}", ttl, lambda: coins_market(category, per_page))
             elif parsed.path == "/api/fear-greed": data, ttl = cached("fear", 3600, fear_greed), 3600
             elif parsed.path == "/api/meme-chains": data, ttl = meme_chains(), 300
+            elif parsed.path == "/api/meme-mentions": data, ttl = cached("meme-mentions", 60, meme_mentions), 60
             elif parsed.path == "/api/kr-top10": data, ttl = cached("kr-top10", 300, kr_top10), 300
             elif parsed.path == "/api/stocks":
                 symbols = [x.upper() for x in params.get("symbols", [""])[0].split(",") if x][:12]
@@ -443,10 +580,27 @@ class Handler(SimpleHTTPRequestHandler):
                 data, ttl = cached("news:" + kind, 600, lambda: news(queries[kind])), 600
             elif parsed.path == "/api/ipo":
                 data, ttl = {"items": [], "updatedAt": int(time.time()), "notice": "공모주 수집기는 Phase 1.5에서 연결됩니다."}, 3600
+            elif parsed.path == "/api/hyperliquid":
+                symbol = params.get("symbol", [None])[0]
+                labels = [symbol] if symbol in HYPERLIQUID_ASSETS else list(HYPERLIQUID_ASSETS)
+                data, ttl = {"items": [hyperliquid_quote(l) for l in labels], "updatedAt": int(time.time())}, 60
             else: return self.json({"error": "Not found"}, 404)
             self.json(data, ttl=ttl)
         except Exception as error:
             self.json({"error": "데이터를 불러오지 못했습니다.", "detail": str(error)}, 502)
+
+    def serve_data_file(self, path: str):
+        # Local-dev-only convenience: on Vercel, /data/*.json is served as a
+        # plain static asset directly (no rewrite touches it), so this path
+        # never executes in production — see plan doc §1.
+        target = (PROJECT_ROOT / path.lstrip("/")).resolve()
+        if PROJECT_ROOT.resolve() not in target.parents or not target.is_file():
+            return self.json({"error": "Not found"}, 404)
+        try:
+            data = json.loads(target.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return self.json({"error": "Not found"}, 404)
+        self.json(data, ttl=60)
 
 
 # Vercel Python runtime entrypoint. Locally, the same Handler remains a normal

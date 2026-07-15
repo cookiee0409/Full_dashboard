@@ -6,8 +6,8 @@ const stored = JSON.parse(localStorage.getItem('hub.settings.v1') || '{}');
 let settings = { ...defaults, ...stored, stocksKR: stored.stocksKR || defaults.stocksKR, stocksUS: stored.stocksUS || defaults.stocksUS };
 let krTop10Symbols = null;
 async function krWatchlistSymbols() { if (settings.stocksKR.length) return settings.stocksKR; if (!krTop10Symbols) { try { krTop10Symbols = (await api('kr-top10')).items.map(x=>x.symbol); } catch { krTop10Symbols = []; } } return krTop10Symbols; }
-let activeMarket = 'kr', activeCategory = 'all', activeChain = 'all', rankSort = { field:'marketCap', asc:false };
-let rankingItems = [], memeData = null, chartItem = null;
+let activeMarket = 'kr', activeCategory = 'all', activeChain = 'mentions', rankSort = { field:'marketCap', asc:false };
+let rankingItems = [], memeData = null, chartItem = null, marketItems = [];
 const api = async path => { const r = await fetch('/api/' + path); const data = await r.json(); if (!r.ok) throw new Error(data.error || '요청 실패'); return data; };
 const money = (n, currency = 'USD') => n == null ? '—' : n > 0 && n < 1 ? new Intl.NumberFormat('ko-KR', { style:'currency', currency, maximumSignificantDigits:4 }).format(n) : new Intl.NumberFormat('ko-KR', { style:'currency', currency, maximumFractionDigits:2 }).format(n);
 function marketCap(n, currency = 'USD') {
@@ -27,6 +27,8 @@ const ago = () => '방금 전';
 function spark(values) { if (!values?.length) return ''; const min=Math.min(...values), max=Math.max(...values), d=max-min||1; const points=values.map((v,i)=>`${i/(values.length-1)*48},${20-(v-min)/d*17}`).join(' '); return `<svg class="spark" viewBox="0 0 48 20" aria-hidden="true"><polyline fill="none" stroke="currentColor" stroke-width="1.5" points="${points}"/></svg>`; }
 const xIcon = handle => handle ? `<a class="link-icon" href="https://x.com/${esc(handle)}" target="_blank" rel="noopener" title="공식 X" aria-label="공식 X" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M18.9 2H22l-7.6 8.7L23 22h-6.9l-5.4-6.7L4.4 22H1.3l8.2-9.4L1 2h7.1l4.9 6.2L18.9 2Zm-1.2 18h1.9L7.4 4h-2l12.3 16Z"/></svg></a>` : '';
 const gmgnIcon = url => url ? `<a class="link-icon gmgn" href="${esc(url)}" target="_blank" rel="noopener" title="GMGN에서 보기" aria-label="GMGN에서 보기" onclick="event.stopPropagation()">G</a>` : '';
+const xSearchIcon = url => url ? `<a class="link-icon" href="${esc(url)}" target="_blank" rel="noopener" title="X 검색" aria-label="X 검색" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M18.9 2H22l-7.6 8.7L23 22h-6.9l-5.4-6.7L4.4 22H1.3l8.2-9.4L1 2h7.1l4.9 6.2L18.9 2Zm-1.2 18h1.9L7.4 4h-2l12.3 16Z"/></svg></a>` : '';
+const teleIcon = url => url ? `<a class="link-icon tele" href="${esc(url)}" target="_blank" rel="noopener" title="텔레그램 원문" aria-label="텔레그램 원문" onclick="event.stopPropagation()">T</a>` : '';
 function bindRowClicks(selector, onActivate) { $$(selector).forEach((row,i)=>{ row.onclick=()=>onActivate(i); row.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); onActivate(i); } }; }); }
 function fail(id, error, retry) { $(id).innerHTML = `<p class="error">${esc(error.message || '데이터를 불러오지 못했습니다.')}${retry ? ' · 잠시 후 자동 재시도' : ''}</p>`; if (retry) setTimeout(retry, 18000); }
 function updateTime(id) { $(id).textContent = ago(); }
@@ -237,18 +239,129 @@ $('#chart-expand').onclick = () => {
   modal.showModal();
 };
 $('#chart-modal-close').onclick = () => $('#chart-modal').close();
-async function loadMarket(isRetry) { try { const d=await api('market'); $('#market-ticker').innerHTML=d.items.map(x => x.error ? `<div class="ticker-item"><span class="ticker-name">${esc(x.name)}</span><strong>—</strong></div>` : `<div class="ticker-item"><span class="ticker-name">${esc(x.name)}</span>${pct(x.changePct)}<strong>${money(x.price,x.currency)}</strong></div>`).join(''); $('#global-status').textContent='갱신됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}); } catch(e) { fail('#market-ticker',e,isRetry?null:()=>loadMarket(true)); } }
+async function loadMarket(isRetry) { try { const d=await api('market'); marketItems=d.items; $('#market-ticker').innerHTML=d.items.map(x => x.error ? `<button type="button" class="ticker-item chart-select"><span class="ticker-name">${esc(x.name)}</span><strong>—</strong></button>` : `<button type="button" class="ticker-item chart-select"><span class="ticker-name">${esc(x.name)}</span>${pct(x.changePct)}<strong>${money(x.price,x.currency)}</strong></button>`).join(''); bindRowClicks('#market-ticker .chart-select', i=>setChart(marketItems[i])); $('#global-status').textContent='갱신됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}); } catch(e) { fail('#market-ticker',e,isRetry?null:()=>loadMarket(true)); } }
 async function loadStocks(isRetry) { const symbols=activeMarket === 'kr' ? await krWatchlistSymbols() : settings.stocksUS; try { const d=await api('stocks?symbols='+encodeURIComponent(symbols.join(','))); $('#stock-rows').innerHTML=d.items.map(x=>`<button class="stock-row chart-select" data-symbol="${esc(x.symbol)}"><span class="stock-name">${esc(x.name)}<small>${esc(x.symbol)}</small></span><span class="price">${money(x.price,x.currency)}</span><span class="change">${pct(x.changePct)}</span><span class="marketcap">${x.marketCapText || marketCap(x.marketCap,x.currency)}</span></button>`).join(''); $$('.stock-row').forEach((row,i)=>row.onclick=()=>setChart(d.items[i])); if (!chartItem && d.items[0]) setChart(d.items[0]); updateTime('#stocks-updated'); } catch(e) { fail('#stock-rows',e,isRetry?null:()=>loadStocks(true)); } }
-function renderMeme() { if (!memeData) return; let items=memeData.items, chainLabel='GMGN 전체 TOP 80'; if(activeChain==='radar'){ items=memeData.radar || []; chainLabel='급등 레이더'; } else if(activeChain !== 'all'){ const found=memeData.chains.find(x=>x.id===activeChain); items=found?.items || []; chainLabel=found?.name || activeChain; } $('.meme-card h2').textContent=`밈코인 가격 보드 · ${chainLabel}`; const alert=items.some(x=>Math.abs(x.change24)>=15); $('.meme-card').classList.toggle('alert',alert); $('#meme-rows').innerHTML=items.map((x,i)=>`<div class="coin-row chart-select" role="button" tabindex="0" data-index="${i}"><span class="coin-rank">${x.rank || i+1}</span><span class="coin-name"><img src="${esc(x.image)}" alt=""><span>${esc(x.name)}<small>${esc(x.symbol)}</small></span>${gmgnIcon(x.gmgn)}</span><span class="coin-price">${money(x.price)}</span><span class="change">${pct(x.change24)}</span><span class="marketcap">${marketCap(x.marketCap)}</span></div>`).join(''); bindRowClicks('#meme-rows .chart-select', i=>setChart(items[i])); }
-async function loadMeme(isRetry) { try { memeData=await api('meme-chains'); const tabs=$('#meme-chain-tabs'); tabs.innerHTML=`<button data-chain="all">GMGN 전체 TOP 80</button><button data-chain="radar">급등 레이더</button>${memeData.chains.map(c=>`<button data-chain="${esc(c.id)}">${esc(c.name)} <small>${c.count}</small></button>`).join('')}`; $$('button',tabs).forEach(b=>{b.classList.toggle('active',b.dataset.chain===activeChain);b.onclick=()=>{activeChain=b.dataset.chain;$$('button',tabs).forEach(x=>x.classList.toggle('active',x===b));renderMeme();};}); renderMeme(); updateTime('#meme-updated'); } catch(e) { fail('#meme-rows',e,isRetry?null:()=>loadMeme(true)); } }
+function mentionRow(x, i) { return `<div class="coin-row chart-select" role="button" tabindex="0" data-index="${i}"><span class="coin-rank">${x.mentions ?? '—'}</span><span class="coin-name"><img src="${esc(x.image)}" alt=""><span>${esc(x.name)}<small>${esc(x.symbol)}</small></span>${gmgnIcon(x.gmgn)}${xSearchIcon(x.x_search)}${teleIcon(x.sample_link)}</span><span class="coin-price">${money(x.price)}</span><span class="change">${pct(x.change24)}</span><span class="marketcap">${marketCap(x.marketCap)}</span></div>`; }
+function renderMeme() {
+  if (activeChain === 'mentions') {
+    const items = mentionsData?.items || [];
+    $('.meme-card h2').textContent = '밈코인 가격 보드 · 텔레그램 언급';
+    $('.meme-card').classList.remove('alert');
+    $('.meme-table-head span:first-child').textContent = '언급';
+    $('#meme-rows').innerHTML = items.length ? items.map(mentionRow).join('') : '<p class="empty-note">아직 수집된 언급 데이터가 없습니다.</p>';
+    bindRowClicks('#meme-rows .chart-select', i => setChart(items[i]));
+    return;
+  }
+  $('.meme-table-head span:first-child').textContent = '#';
+  if (!memeData) return;
+  let items=memeData.items, chainLabel='GMGN 전체 TOP 80';
+  if(activeChain==='radar'){ items=memeData.radar || []; chainLabel='급등 레이더'; }
+  else if(activeChain !== 'all'){ const found=memeData.chains.find(x=>x.id===activeChain); items=found?.items || []; chainLabel=found?.name || activeChain; }
+  $('.meme-card h2').textContent=`밈코인 가격 보드 · ${chainLabel}`;
+  const alert=items.some(x=>Math.abs(x.change24)>=15); $('.meme-card').classList.toggle('alert',alert);
+  $('#meme-rows').innerHTML=items.map((x,i)=>`<div class="coin-row chart-select" role="button" tabindex="0" data-index="${i}"><span class="coin-rank">${x.rank || i+1}</span><span class="coin-name"><img src="${esc(x.image)}" alt=""><span>${esc(x.name)}<small>${esc(x.symbol)}</small></span>${gmgnIcon(x.gmgn)}</span><span class="coin-price">${money(x.price)}</span><span class="change">${pct(x.change24)}</span><span class="marketcap">${marketCap(x.marketCap)}</span></div>`).join('');
+  bindRowClicks('#meme-rows .chart-select', i=>setChart(items[i]));
+}
+async function loadMemeMentions(isRetry) {
+  try { mentionsData = await api('meme-mentions'); if (activeChain === 'mentions') renderMeme(); }
+  catch(e) { if (activeChain === 'mentions') fail('#meme-rows', e, isRetry ? null : () => loadMemeMentions(true)); }
+}
+async function loadMeme(isRetry) {
+  try {
+    memeData=await api('meme-chains');
+    const tabs=$('#meme-chain-tabs');
+    tabs.innerHTML=`<button data-chain="mentions">텔레그램 언급</button><button data-chain="all">GMGN 전체 TOP 80</button><button data-chain="radar">급등 레이더</button>${memeData.chains.map(c=>`<button data-chain="${esc(c.id)}">${esc(c.name)} <small>${c.count}</small></button>`).join('')}`;
+    $$('button',tabs).forEach(b=>{b.classList.toggle('active',b.dataset.chain===activeChain);b.onclick=()=>{activeChain=b.dataset.chain;$$('button',tabs).forEach(x=>x.classList.toggle('active',x===b));renderMeme();};});
+    renderMeme();
+    updateTime('#meme-updated');
+  } catch(e) { fail('#meme-rows',e,isRetry?null:()=>loadMeme(true)); }
+  loadMemeMentions();
+}
 function renderRanking() { const items=[...rankingItems].sort((a,b)=>{ const av=a[rankSort.field],bv=b[rankSort.field]; const result=typeof av==='string'?av.localeCompare(bv):((av??0)-(bv??0)); return rankSort.asc?result:-result; }); $('#rank-rows').innerHTML=items.map((x,i)=>`<div class="rank-row chart-select" role="button" tabindex="0"><span class="coin-rank">${x.rank}</span><span class="coin-name"><img src="${esc(x.image)}" alt=""><span>${esc(x.name)}<small>${esc(x.symbol)}</small></span>${xIcon(x.twitter)}</span><span class="coin-price">${money(x.price)}</span><span class="change">${pct(x.change24)}</span><span class="marketcap">${marketCap(x.marketCap)}</span></div>`).join(''); bindRowClicks('#rank-rows .chart-select', i=>setChart(items[i])); $$('.rank-table-head button').forEach(b=>b.classList.toggle('sorted',b.dataset.sort===rankSort.field)); }
 async function loadRanking(isRetry) { try { const d=await api(`coins?category=${activeCategory}&limit=20`); rankingItems=d.items; renderRanking(); updateTime('#ranking-updated'); } catch(e) { fail('#rank-rows',e,isRetry?null:()=>loadRanking(true)); } }
 function relative(pub) { const h=Math.max(0,Math.round((Date.now()-new Date(pub))/36e5)); return h<1?'방금 전':h<24?`${h}시간 전`:`${Math.round(h/24)}일 전`; }
-async function loadNews(kind,id,timeId,isRetry) { try { const d=await api('news?kind='+kind); $(id).innerHTML=d.items.map(x=>`<a class="news-row" href="${esc(x.url)}" target="_blank" rel="noopener"><div class="news-title">${esc(x.title)}</div><div class="news-meta"><span>${esc(x.source)}</span><span>·</span><span>${relative(x.published)}</span></div></a>`).join(''); updateTime(timeId); } catch(e) { fail(id,e,isRetry?null:()=>loadNews(kind,id,timeId,true)); } }
+const IMPORTANT_NEWS_RE = /(실적|공시|수주|유상증자|자사주|인수합병|급등|급락)/;
+async function loadNews(kind,id,timeId,isRetry) { try { const d=await api('news?kind='+kind); $(id).innerHTML=d.items.map(x=>`<a class="news-row" href="${esc(x.url)}" target="_blank" rel="noopener"><div class="news-title">${kind==='stocks'&&IMPORTANT_NEWS_RE.test(x.title)?'<span class="badge-important">주요</span>':''}${esc(x.title)}</div><div class="news-meta"><span>${esc(x.source)}</span><span>·</span><span>${relative(x.published)}</span></div></a>`).join(''); updateTime(timeId); } catch(e) { fail(id,e,isRetry?null:()=>loadNews(kind,id,timeId,true)); } }
 async function loadFear() { try { const d=await api('fear-greed'); $('#gauge-fill').parentElement.style.setProperty('--value',d.value); $('#fear-value').textContent=d.value; $('#fear-label').textContent=d.label; } catch(e) { $('#fear-label').textContent='지수 연결 실패'; } }
-function loadAll() { loadMarket();loadStocks();loadMeme();loadRanking();loadNews('stocks','#stocks-news','#stocks-news-updated');loadNews('world','#world-news','#world-news-updated');loadNews('crypto','#crypto-news','#crypto-news-updated');loadFear(); }
+
+function kstToday() { const d = new Date(Date.now() + 9*36e5); return { date: d.toISOString().slice(0,10), weekday: ['sun','mon','tue','wed','thu','fri','sat'][d.getUTCDay()] }; }
+const airdropState = () => JSON.parse(localStorage.getItem('hub.airdrops.v1') || '{}');
+const saveAirdropState = state => localStorage.setItem('hub.airdrops.v1', JSON.stringify(state));
+let airdropTasks = [];
+function airdropDday(deadline) {
+  if (!deadline) return '';
+  const diff = Math.round((new Date(deadline) - new Date(kstToday().date)) / 86400000);
+  if (diff < 0) return '<span class="dday over">마감</span>';
+  return `<span class="dday">${diff === 0 ? 'D-DAY' : 'D-' + diff}</span>`;
+}
+function renderAirdrops() {
+  const { date: today, weekday } = kstToday();
+  const state = airdropState();
+  const isDone = t => state[t.id]?.date === today && state[t.id]?.done;
+  const todays = airdropTasks.filter(t => t.active !== false && (!t.deadline || t.deadline >= today)
+    && (t.cycle === 'daily' || t.cycle === `weekly:${weekday}`));
+  if (!todays.length) { $('#airdrop-list').innerHTML = '<p class="empty-note">오늘 해당하는 태스크가 없습니다.</p>'; return; }
+  const doneCount = todays.filter(isDone).length;
+  const sorted = [...todays].sort((a, b) => isDone(a) - isDone(b));
+  $('#airdrop-list').innerHTML = `<div class="airdrop-progress">${doneCount}/${todays.length} 완료</div><div class="airdrop-rows">${sorted.map(t => `<label class="airdrop-row${isDone(t) ? ' done' : ''}"><input type="checkbox" data-id="${esc(t.id)}" ${isDone(t) ? 'checked' : ''}><span class="airdrop-name">${esc(t.name)}${t.memo ? `<small>${esc(t.memo)}</small>` : ''}</span>${airdropDday(t.deadline)}${t.url ? `<a class="link-icon" href="${esc(t.url)}" target="_blank" rel="noopener" title="바로가기" onclick="event.stopPropagation()">↗</a>` : ''}</label>`).join('')}</div>`;
+  $$('#airdrop-list input[type=checkbox]').forEach(box => box.onchange = () => {
+    const s = airdropState();
+    s[box.dataset.id] = { date: today, done: box.checked };
+    saveAirdropState(s);
+    renderAirdrops();
+  });
+}
+async function loadAirdrops(isRetry) { try { const d = await (await fetch('/data/airdrops.json')).json(); airdropTasks = d.tasks || []; renderAirdrops(); updateTime('#airdrop-updated'); } catch(e) { fail('#airdrop-list', e, isRetry ? null : () => loadAirdrops(true)); } }
+
+let briefingData = null;
+function renderBriefRaw() {
+  const byChannel = briefingData?.crypto_brief?.raw_by_channel || {};
+  const channels = Object.keys(byChannel);
+  $('#brief-raw').innerHTML = channels.length ? channels.map(ch => `<div class="brief-channel"><h4>${esc(ch)}</h4>${byChannel[ch].map(m => `<a class="news-row" href="${esc(m.link)}" target="_blank" rel="noopener"><div class="news-title">${esc(m.text)}</div><div class="news-meta"><span>${relative(m.ts)}</span></div></a>`).join('')}</div>`).join('') : '<p class="empty-note">채널별 원문이 없습니다.</p>';
+}
+async function loadBriefing(isRetry) {
+  try {
+    briefingData = await (await fetch('/data/briefing.json')).json();
+    const brief = briefingData.crypto_brief || {};
+    const highlights = (brief.highlights || []).slice(0, 8);
+    $('#brief-list').innerHTML = highlights.length ? highlights.map(h => `<a class="news-row" href="${esc(h.link)}" target="_blank" rel="noopener"><div class="news-title">${esc(h.text)}</div><div class="news-meta"><span>${esc(h.channel)}</span><span>·</span><span>${relative(h.ts)}</span>${h.cluster_size > 1 ? `<span class="brief-cluster">${h.cluster_size}건 언급</span>` : ''}</div></a>`).join('') : '<p class="empty-note">아직 수집된 브리핑이 없습니다.</p>';
+    $('#brief-toggle-raw').hidden = Object.keys(brief.raw_by_channel || {}).length === 0;
+    $('#brief-updated').textContent = briefingData.generated_at ? relative(briefingData.generated_at) : '—';
+  } catch(e) { fail('#brief-list', e, isRetry ? null : () => loadBriefing(true)); }
+}
+$('#brief-toggle-raw').onclick = () => { const raw = $('#brief-raw'), willShow = raw.hidden; if (willShow) renderBriefRaw(); raw.hidden = !willShow; $('#brief-toggle-raw').textContent = willShow ? '채널별 전체 보기 접기' : '채널별 전체 보기'; };
+
+let keywordItems = [];
+const trendBadge = trend => ({ new: '<span class="trend-badge new">NEW</span>', rising: '<span class="trend-badge rising">급등</span>', steady: '<span class="trend-badge steady">유지</span>' }[trend] || '');
+function keywordMarkdown(item) {
+  return [`### ${item.word} (오늘 ${item.count}회 · ${item.trend})`, '', ...(item.evidence || []).map(e => `- ${e.text} (${e.link})`)].join('\n');
+}
+function renderKeywords() {
+  if (!keywordItems.length) { $('#keyword-list').innerHTML = '<p class="empty-note">아직 수집된 키워드가 없습니다.</p>'; return; }
+  $('#keyword-list').innerHTML = keywordItems.map((item, i) => `<div class="keyword-row"><div class="keyword-main"><button type="button" class="keyword-toggle" data-index="${i}"><span class="keyword-rank">${i + 1}</span><span class="keyword-word">${esc(item.word)}</span>${trendBadge(item.trend)}<span class="keyword-count">${item.count}회</span></button><button type="button" class="keyword-copy" data-index="${i}" title="블로그 재료 복사">복사</button></div><div class="keyword-evidence" hidden>${(item.evidence || []).map(e => `<a class="news-row" href="${esc(e.link)}" target="_blank" rel="noopener"><div class="news-title">${esc(e.text)}</div><div class="news-meta"><span>${e.type === 'news' ? '뉴스' : '텔레그램'}</span></div></a>`).join('') || '<p class="empty-note">근거 없음</p>'}</div></div>`).join('');
+  $$('.keyword-toggle').forEach(btn => btn.onclick = () => { const ev = btn.closest('.keyword-row').querySelector('.keyword-evidence'); ev.hidden = !ev.hidden; });
+  $$('.keyword-copy').forEach(btn => btn.onclick = async () => {
+    try { await navigator.clipboard.writeText(keywordMarkdown(keywordItems[+btn.dataset.index])); const original = btn.textContent; btn.textContent = '복사됨'; setTimeout(() => btn.textContent = original, 1500); } catch {}
+  });
+}
+async function loadKeywords(isRetry) {
+  try { const d = await (await fetch('/data/briefing.json')).json(); keywordItems = d.keywords?.items || []; renderKeywords(); $('#keyword-updated').textContent = d.generated_at ? relative(d.generated_at) : '—'; }
+  catch(e) { fail('#keyword-list', e, isRetry ? null : () => loadKeywords(true)); }
+}
+
+let promptItems = [];
+function renderPrompts() {
+  if (!promptItems.length) { $('#prompt-list').innerHTML = '<p class="empty-note">아직 수집된 프롬프트 소스가 없습니다.</p>'; return; }
+  $('#prompt-list').innerHTML = promptItems.map(p => `<a class="news-row" href="${esc(p.link)}" target="_blank" rel="noopener"><div class="news-title">${esc(p.title)}</div><div class="news-meta"><span>${p.source === 'reddit' ? 'Reddit' : '텔레그램'}</span><span>·</span><span>${relative(typeof p.ts === 'number' ? p.ts * 1000 : p.ts)}</span>${p.upvotes ? `<span>· ▲${p.upvotes}</span>` : ''}</div></a>`).join('');
+}
+async function loadPrompts(isRetry) {
+  try { const d = await (await fetch('/data/briefing.json')).json(); promptItems = d.prompt_sources?.items || []; renderPrompts(); $('#prompt-updated').textContent = d.generated_at ? relative(d.generated_at) : '—'; }
+  catch(e) { fail('#prompt-list', e, isRetry ? null : () => loadPrompts(true)); }
+}
+
+function loadAll() { loadMarket();loadStocks();loadMeme();loadRanking();loadNews('stocks','#stocks-news','#stocks-news-updated');loadNews('world','#world-news','#world-news-updated');loadNews('crypto','#crypto-news','#crypto-news-updated');loadFear();loadAirdrops();loadBriefing();loadKeywords();loadPrompts(); }
 $$('.stock-tab').forEach(b=>b.onclick=()=>{activeMarket=b.dataset.market;$$('.stock-tab').forEach(x=>x.classList.toggle('active',x===b));loadStocks()});$$('.category-tabs button').forEach(b=>b.onclick=()=>{activeCategory=b.dataset.category;$$('.category-tabs button').forEach(x=>x.classList.toggle('active',x===b));loadRanking()});$$('.rank-table-head button').forEach(b=>b.onclick=()=>{rankSort.asc=rankSort.field===b.dataset.sort?!rankSort.asc:false;rankSort.field=b.dataset.sort;renderRanking()});
-$('#refresh-all').onclick=loadAll; $$('.refresh').forEach(b=>b.onclick=()=>({stocks:loadStocks,meme:loadMeme,ranking:loadRanking,'stocks-news':()=>loadNews('stocks','#stocks-news','#stocks-news-updated'),'crypto-news':()=>{loadNews('crypto','#crypto-news','#crypto-news-updated');loadFear()},'world-news':()=>loadNews('world','#world-news','#world-news-updated')}[b.dataset.target]()));
+$('#refresh-all').onclick=loadAll; $$('.refresh').forEach(b=>b.onclick=()=>({stocks:loadStocks,meme:loadMeme,ranking:loadRanking,'stocks-news':()=>loadNews('stocks','#stocks-news','#stocks-news-updated'),'crypto-news':()=>{loadNews('crypto','#crypto-news','#crypto-news-updated');loadFear()},'world-news':()=>loadNews('world','#world-news','#world-news-updated'),airdrops:loadAirdrops,brief:loadBriefing,keywords:loadKeywords,prompts:loadPrompts}[b.dataset.target]()));
 const dialog=$('#settings'); $('#open-settings').onclick=()=>{ $('#theme').value=settings.theme;$('#color-mode').value=settings.colorMode;$('#stocks-kr').value=settings.stocksKR.join(', ');$('#stocks-us').value=settings.stocksUS.join(', ');$('#stock-search').value='';$('#stock-search-results').innerHTML='';dialog.showModal();};$('#add-stock').onclick=()=>$('#open-settings').click(); $$('dialog [value="cancel"]').forEach(b=>b.onclick=()=>dialog.close()); $('#save-settings').onclick=()=>{settings.theme=$('#theme').value;settings.colorMode=$('#color-mode').value;settings.stocksKR=$('#stocks-kr').value.split(',').map(x=>x.trim()).filter(Boolean);settings.stocksUS=$('#stocks-us').value.split(',').map(x=>x.trim()).filter(Boolean);localStorage.setItem('hub.settings.v1',JSON.stringify(settings));applySettings();loadStocks();};
 let searchTimer; $('#stock-search').oninput=e=>{clearTimeout(searchTimer);const q=e.target.value.trim();if(q.length<2){$('#stock-search-results').innerHTML='';return;}searchTimer=setTimeout(async()=>{try{const d=await api('search-stocks?q='+encodeURIComponent(q));$('#stock-search-results').innerHTML=d.items.map(x=>`<button type="button" data-symbol="${x.symbol}" data-exchange="${x.exchange}"><b>${x.name}</b><span>${x.symbol} · ${x.exchange}</span></button>`).join('')||'<p>검색 결과가 없습니다.</p>';$$('#stock-search-results button').forEach(b=>b.onclick=()=>{const domestic=/Korea|KOSDAQ|Korea Stock/i.test(b.dataset.exchange)||/\.(KS|KQ)$/i.test(b.dataset.symbol);const field=$(domestic?'#stocks-kr':'#stocks-us');const symbols=field.value.split(',').map(x=>x.trim()).filter(Boolean);if(!symbols.includes(b.dataset.symbol))symbols.push(b.dataset.symbol);field.value=symbols.join(', ');$('#stock-search').value='';$('#stock-search-results').innerHTML='';});}catch{ $('#stock-search-results').innerHTML='<p>검색에 실패했습니다.</p>'; }},250);};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadAll()});applySettings();loadAll();setInterval(()=>{if(!document.hidden){loadMarket();loadMeme();loadStocks()}},60000);setInterval(()=>{if(!document.hidden){loadRanking();loadNews('stocks','#stocks-news','#stocks-news-updated');loadNews('world','#world-news','#world-news-updated');loadNews('crypto','#crypto-news','#crypto-news-updated')}},300000);

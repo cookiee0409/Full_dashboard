@@ -1,0 +1,8 @@
+{
+  "tasks": [
+    { "id": "example-daily", "name": "예시: 매일 체크하는 태스크", "url": "https://example.com",
+      "cycle": "daily", "memo": "이 파일(data/airdrops.json)을 실제 태스크로 교체하세요", "deadline": null, "active": true },
+    { "id": "example-weekly", "name": "예시: 매주 월요일 태스크", "url": "https://example.com",
+      "cycle": "weekly:mon", "memo": "", "deadline": null, "active": true }
+  ]
+}

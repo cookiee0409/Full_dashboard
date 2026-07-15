@@ -1,0 +1,6 @@
+{
+  "blacklist": ["BTC", "ETH", "SOL", "BNB", "XRP", "DOGE", "ADA", "AVAX", "LINK", "MATIC",
+                "TRX", "DOT", "LTC", "SHIB", "TON", "NEAR", "APT", "ARB", "OP", "SUI",
+                "FIL", "ATOM", "XLM", "INJ", "RUNE", "ENA", "PEPE", "USDT", "USDC", "HYPE"],
+  "whitelist": []
+}
