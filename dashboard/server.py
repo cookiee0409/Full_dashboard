@@ -16,6 +16,7 @@ ROOT = Path(__file__).parent
 CACHE: dict[str, tuple[float, object]] = {}
 UA = "InterestHubEconomy/1.0 (+local dashboard)"
 NAVER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+GMGN_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
 
 
 def cached(key: str, ttl: int, loader):
@@ -70,14 +71,16 @@ def _parse_yahoo_history(result: dict):
     return {"dates": dates, "open": opens, "high": highs, "low": lows, "close": closes, "volume": volumes}
 
 
-def yahoo_history_full(symbol: str, range_: str = "3mo"):
+def yahoo_history_full(symbol: str, range_: str = "1y"):
     url = "https://query1.finance.yahoo.com/v8/finance/chart/" + quote(symbol) + f"?range={range_}&interval=1d"
     result = fetch_json(url)["chart"]["result"][0]
     return _parse_yahoo_history(result)
 
 
 def yahoo(symbol: str):
-    url = "https://query1.finance.yahoo.com/v8/finance/chart/" + quote(symbol) + "?range=3mo&interval=1d"
+    # One year supplies the 1/3/6 month and full-period chart controls without
+    # a second network request every time a visitor changes the period.
+    url = "https://query1.finance.yahoo.com/v8/finance/chart/" + quote(symbol) + "?range=1y&interval=1d"
     result = fetch_json(url)["chart"]["result"][0]
     meta = result["meta"]
     history = _parse_yahoo_history(result)
@@ -254,8 +257,11 @@ def coins_market(category: str | None = None, per_page: int = 30):
 
 
 GMGN_CHAIN_SLUG = {"solana": "sol", "ethereum": "eth", "binance-smart-chain": "bsc", "base": "base"}
-MEME_CHAIN_ORDER = [("solana", "Solana"), ("binance-smart-chain", "BSC"), ("robinhood", "Robinhood"),
+# GMGN's public trend board exposes these chains directly.  "Robinhood" was a
+# CoinGecko ecosystem category, not a chain, and therefore could never fill.
+MEME_CHAIN_ORDER = [("solana", "Solana"), ("binance-smart-chain", "BSC"),
                     ("base", "Base"), ("ethereum", "Ethereum")]
+GMGN_RANK_CHAIN = {"solana": "sol", "binance-smart-chain": "bsc", "base": "base", "ethereum": "eth"}
 
 
 def gmgn_link(chain: str | None, address: str | None):
@@ -263,35 +269,66 @@ def gmgn_link(chain: str | None, address: str | None):
     return f"https://gmgn.ai/{slug}/token/{address}" if slug and address else None
 
 
+def gmgn_rank(chain_id: str, gmgn_chain: str):
+    """Return the top 20 market-cap entries from GMGN's public trend board."""
+    url = (f"https://gmgn.ai/defi/quotation/v1/rank/{gmgn_chain}/swaps/24h?"
+           "orderby=marketcap&direction=desc&filters[]=not_honeypot&filters[]=verified")
+    request = Request(url, headers={"User-Agent": GMGN_UA, "Accept": "application/json, text/plain, */*",
+                                    "Accept-Language": "en-US,en;q=0.9", "Referer": "https://gmgn.ai/"})
+    with urlopen(request, timeout=6) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    rows = (payload.get("data") or {}).get("rank") or []
+    return [{"id": f"gmgn:{gmgn_chain}:{row.get('address', i)}", "rank": i + 1,
+             "name": row.get("name") or row.get("symbol") or "Unknown",
+             "symbol": (row.get("symbol") or "—").upper(), "image": row.get("logo") or "",
+             "price": row.get("price"), "change24": row.get("price_change_percent") or 0,
+             "marketCap": row.get("market_cap"), "volume": row.get("volume"), "spark": [],
+             "chain": chain_id, "gmgn": gmgn_link(chain_id, row.get("address"))}
+            for i, row in enumerate(rows[:20])]
+
+
 def meme_chains():
-    """Group the top meme-token universe by each coin's *primary* chain — the
-    first key CoinGecko lists under `platforms`, which matches its
-    asset_platform_id — so a multi-chain coin appears in exactly one tab
-    instead of every chain it happens to be bridged to."""
+    """Build GMGN-style chain boards, with the first 20 tokens per chain."""
     key = "meme-chains"
-    item = CACHE.get(key)
-    if item and time.time() - item[0] < 600:
-        return item[1]
-    platform_list = cached("coin-platforms", 86400, lambda: fetch_json("https://api.coingecko.com/api/v3/coins/list?include_platform=true"))
-    primary_platform = {coin["id"]: next(iter((coin.get("platforms") or {}).items()), (None, None))
-                        for coin in platform_list}
-    items = coins_market("meme-token", 250)["items"]
-    for coin in items:
-        chain, address = primary_platform.get(coin["id"], (None, None))
-        coin["chain"] = chain
-        coin["gmgn"] = gmgn_link(chain, address)
-    groups: dict[str | None, list[dict]] = {}
-    for coin in items:
-        groups.setdefault(coin["chain"], []).append(coin)
-    fixed_ids = {chain_id for chain_id, _ in MEME_CHAIN_ORDER}
-    etc_items = [coin for coin in items if coin["chain"] not in fixed_ids]
-    chains = [{"id": chain_id, "name": label, "count": len(groups.get(chain_id, [])),
-               "items": groups.get(chain_id, [])[:20]}
+    cached_item = CACHE.get(key)
+    if cached_item and time.time() - cached_item[0] < 600:
+        return cached_item[1]
+
+    platform_list = cached("coin-platforms", 86400,
+                           lambda: fetch_json("https://api.coingecko.com/api/v3/coins/list?include_platform=true"))
+    platforms = {coin["id"]: coin.get("platforms") or {} for coin in platform_list}
+    fallback_items = coins_market("meme-token", 250)["items"]
+
+    def coingecko_fallback(chain_id: str):
+        # Check every platform, instead of only CoinGecko's first platform, so
+        # bridged tokens are visible in the chain where users trade them.
+        chain_items = []
+        for coin in fallback_items:
+            address = platforms.get(coin["id"], {}).get(chain_id)
+            if address:
+                chain_items.append({**coin, "chain": chain_id, "gmgn": gmgn_link(chain_id, address)})
+        return chain_items[:20]
+
+    with ThreadPoolExecutor(max_workers=len(MEME_CHAIN_ORDER)) as executor:
+        futures = {chain_id: executor.submit(gmgn_rank, chain_id, GMGN_RANK_CHAIN[chain_id])
+                   for chain_id, _ in MEME_CHAIN_ORDER}
+        chain_rows = {}
+        for chain_id, _ in MEME_CHAIN_ORDER:
+            try:
+                chain_rows[chain_id] = futures[chain_id].result()
+            except Exception:
+                # GMGN's Cloudflare edge can deny server-side requests.  The
+                # fallback preserves a useful, non-empty board in that case.
+                chain_rows[chain_id] = coingecko_fallback(chain_id)
+
+    chains = [{"id": chain_id, "name": label, "count": len(chain_rows[chain_id]),
+               "items": chain_rows[chain_id]}
               for chain_id, label in MEME_CHAIN_ORDER]
-    chains.append({"id": "etc", "name": "기타", "count": len(etc_items), "items": etc_items[:20]})
-    radar_pool = [c for c in items if (c.get("marketCap") or 0) >= 5_000_000]
-    radar = sorted(radar_pool, key=lambda c: abs(c.get("change24") or 0), reverse=True)[:10]
-    result = {"items": items[:30], "radar": radar, "chains": chains, "updatedAt": int(time.time())}
+    all_items = [coin for chain_id, _ in MEME_CHAIN_ORDER for coin in chain_rows[chain_id]]
+    radar_pool = [coin for coin in all_items if (coin.get("marketCap") or 0) >= 5_000_000]
+    result = {"items": all_items,
+              "radar": sorted(radar_pool, key=lambda coin: abs(coin.get("change24") or 0), reverse=True)[:10],
+              "chains": chains, "updatedAt": int(time.time())}
     CACHE[key] = (time.time(), result)
     return result
 
