@@ -28,6 +28,12 @@ KST = timezone(timedelta(hours=9))
 # Not wired up -- (a) rule-based first-sentence extraction is used instead.
 USE_LLM_SUMMARY = False
 
+# When the repo is PUBLIC, set BRIEFING_PUBLIC_SAFE=1 in the workflow so the
+# committed briefing.json (and its permanent git history) keeps only the short
+# highlight sentences and drops the full per-channel message archive. Highlights
+# still power the card; only the "채널별 전체 보기" timeline is withheld.
+PUBLIC_SAFE = os.environ.get("BRIEFING_PUBLIC_SAFE") == "1"
+
 
 def load_json(path: Path, default):
     try:
@@ -75,8 +81,11 @@ def cluster_highlights(messages_by_channel: dict, stopwords: set[str], top_n: in
                            "link": representative["link"], "ts": representative["ts"],
                            "cluster_size": len(cluster)})
 
-    raw_by_channel = {channel: [{"text": m["text"], "link": m["link"], "ts": m["ts"]} for m in msgs]
-                      for channel, msgs in messages_by_channel.items()}
+    if PUBLIC_SAFE:
+        raw_by_channel = {}
+    else:
+        raw_by_channel = {channel: [{"text": m["text"], "link": m["link"], "ts": m["ts"]} for m in msgs]
+                          for channel, msgs in messages_by_channel.items()}
     return {"highlights": highlights, "raw_by_channel": raw_by_channel}
 
 
