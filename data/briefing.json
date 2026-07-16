@@ -1,7 +1,251 @@
 {
-  "generated_at": null,
-  "crypto_brief": { "status": "pending", "highlights": [], "raw_by_channel": {} },
-  "meme_mentions": { "status": "pending", "tickers": [] },
-  "keywords": { "status": "pending", "items": [] },
-  "prompt_sources": { "status": "pending", "items": [] }
+  "generated_at": "2026-07-16T15:00:12.566591+09:00",
+  "crypto_brief": {
+    "status": "ok",
+    "highlights": [],
+    "raw_by_channel": {}
+  },
+  "meme_mentions": {
+    "status": "ok",
+    "tickers": []
+  },
+  "keywords": {
+    "status": "ok",
+    "items": [
+      {
+        "word": "비트코인",
+        "count": 13,
+        "trend": "new",
+        "score": 169.0,
+        "evidence": [
+          {
+            "type": "news",
+            "text": "비트코인, $64,500 유지…금리 우려 완화·이란 긴장 지속",
+            "link": "https://news.google.com/rss/articles/CBMic0FVX3lxTE8yZDRUWHBvYk1yc0RBVWI4cFQ5YUM2YnFNNkk0QWJCTnoySklLRDJRQ2FwVXRYUUxLeGtoTGs5TVZHMVZFeWRlZGRtMkZ4dGhoM1hXVlB6N045a3VOOTZ0MDFyYm1qTGZDek1zaEpIWHNrWnM?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "美 정부, 압수 비트코인·이더리움 4000억원 상당 이동…매각 신호일까",
+            "link": "https://news.google.com/rss/articles/CBMiT0FVX3lxTFBDb3dYU2ZkOXlZZVpabFBycHZ1WUhTdlRTUTdmMXVOa0c3V2luM0hyYXlZUHpTck5WS3N2Tl9ZRUlHbHM1c3poRU9vcnRtd0U?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "이더리움, 비트코인 수익률 앞질러…ETF 자금 유입·로빈후드 체인 수혜",
+            "link": "https://news.google.com/rss/articles/CBMiUEFVX3lxTE1palJ3TE5SbVc3clVpMlJHbUlYakM4Qk9NUnJOcXJYQUJSRm90YXBrR0FLWjZDYlBSbzRvelRWZEx4dmpvZk9ka0NOZlloOVll?oc=5"
+          }
+        ]
+      },
+      {
+        "word": "증시",
+        "count": 12,
+        "trend": "new",
+        "score": 144.0,
+        "evidence": [
+          {
+            "type": "news",
+            "text": "[논단]500조 ETF 시장이 흔드는 주춧돌, '왝더독'에 갇힌 한국 증시",
+            "link": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE55c0hSVy1MT3hfanpEVFdjNkdwZWU2QXV6bUMtWXRRc3ZlVkYyNm94dEpXbW9aX3JzTVhTV3kwbXFRNXd0c21fNndKTFRSTWhYOGM2QVVlQ25kYkRWNnQ2bA?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "로베코운용 \"한국 증시, 이익만 버티면 더 간다\" [현장+]",
+            "link": "https://news.google.com/rss/articles/CBMiRkFVX3lxTE9ob3ZER2pob200bzJuMFJKUmZQZGIwZHM1czR5NnNKUE53bFVVbC1YdXg0NVdYWGdEdW9BOGdiRmtkNEdRalE?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "[굿모닝! 금융지식] 외국인이 주식을 사면 왜 증시가 오를까",
+            "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5rTDFYb1gyNFZkZFFZdmN4OTNGT2o1ZFREeGZYOFdZZVBQZDhrZnhPdVA4Z0RDWFU3Zm1tVDVUR2tOVkZhX2ppXzlXdGlaX0JtVmJ4djI1UVR0azBHTjJDNEg1N1V0ZlRzMzFMYw?oc=5"
+          }
+        ]
+      },
+      {
+        "word": "한국",
+        "count": 11,
+        "trend": "new",
+        "score": 121.0,
+        "evidence": [
+          {
+            "type": "news",
+            "text": "[논단]500조 ETF 시장이 흔드는 주춧돌, '왝더독'에 갇힌 한국 증시",
+            "link": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE55c0hSVy1MT3hfanpEVFdjNkdwZWU2QXV6bUMtWXRRc3ZlVkYyNm94dEpXbW9aX3JzTVhTV3kwbXFRNXd0c21fNndKTFRSTWhYOGM2QVVlQ25kYkRWNnQ2bA?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "로베코운용 \"한국 증시, 이익만 버티면 더 간다\" [현장+]",
+            "link": "https://news.google.com/rss/articles/CBMiRkFVX3lxTE9ob3ZER2pob200bzJuMFJKUmZQZGIwZHM1czR5NnNKUE53bFVVbC1YdXg0NVdYWGdEdW9BOGdiRmtkNEdRalE?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "로베코운용 “한국 증시 상승 여력 남았다…AI 편중에 변동성은 지속”",
+            "link": "https://news.google.com/rss/articles/CBMiTkFVX3lxTE1sUElIOXE3OEhvYk1RN1pOX3V1Yi1PZlc2WUNXbkprSE55cldyQVQ0ZFdSdEdzOFBQZm5hQ1kweUl3dUpycDBWallWVjNxdw?oc=5"
+          }
+        ]
+      },
+      {
+        "word": "하이닉스",
+        "count": 6,
+        "trend": "new",
+        "score": 36.0,
+        "evidence": [
+          {
+            "type": "news",
+            "text": "한국 증시 닫혀도 거래되는 SK하이닉스…역외 RWA 선물 43조원",
+            "link": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNT0RHZldzUklqaDRqam5fV3FHVFFJY3lJN0ZpYTF4clduT013SVBZakZqRHNRUnFGbnVDWlpPTE5OdFlCWnV6ZEowZ055eEJITkJ4Qi1vZzZuMkszcUk5bEJOa0t1YXQxTTZPOWhyWGhjNUdvZzBxWmVvWFdsSF9HdA?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "미국은 ADR, 한국은 레버리지…SK하이닉스 둘러싼 '이중 꼬리'가 시장 흔든다 [증시는 왜]",
+            "link": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFA5cWlXOWp6ZXVaWW5vQ1B3cXZKaVhudkhFRTlIQ0MxVG9fZDh5a3ZfTXRJRlItdEprNmlVZmtrWGEtOE9lSVNmX2tuZVZzTnZPMkhsdkdZUldSdw?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "SK하이닉스, 미국 증시 초대형 상장…약 39조원 조달",
+            "link": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE9WRHNIVTQtNmw3TDZNZGxJQjFQSjVuZGtjYzRibHZwaXpZd21XVmVyX1pjX2xRaXlVWVBkVXFkdWRLR2RVMThYeVp4R0JGZ1JfMDBlMVJQbHRON2FN0gFiQVVfeXFMUE1kSXlWZWtDcm5fNTZGOFk5cURBWDlpMWRoWWV0SVRmaE9UbUpOTnAyQ05kV3FOc040enZXQmhiVnQwUDlSc2xnWTQ5WkVDQVY0VzZHYzVDeFFGaDg4cmhGbXc?oc=5"
+          }
+        ]
+      },
+      {
+        "word": "시장",
+        "count": 4,
+        "trend": "new",
+        "score": 16.0,
+        "evidence": [
+          {
+            "type": "news",
+            "text": "블랙록, 암호화폐 시장서 고전…디지털자산 펀드 규모 40% 급감",
+            "link": "https://news.google.com/rss/articles/CBMicEFVX3lxTFB0c0VqdHJkNmJBeWU3eHVsaUstUTQ1QXNfUkxBY2x0UDdFekdscnRUTkxFdF94YzgtdS14ZnFnUDlJa0NmZnRRN243RlRza05na3V4djNfX3ZucXRCQTVHcGVjZWNZYndnUERXM2FVTTXSAXRBVV95cUxPd2tSWHl0RXhrSlYyYWFfSVppaXJtcU5jaHZqMl9BYXFsaTJsNnQ2cTZpeFNWeVhma05IeEdkN0E0d3VJU1RzZGlJWVNfOE5uNGdZaDluS25ZQVVhZEl2dHRxT1dfOHdQRjE0cjBRMnVQQnFPSQ?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "암호화폐 시장 50일 이동평균선 돌파…비트코인 7만 3,000~7만 4,000달러 주목",
+            "link": "https://news.google.com/rss/articles/CBMiSkFVX3lxTFBXUmdUMTlWNUNkNnZkQkdHcHI4RDlKcnNOUjBGOGJmSTNfRFA1eGxyeDVXTFRyQU52TVNDUnFsVnh0aS0xS2pZYjdn?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "[논단]500조 ETF 시장이 흔드는 주춧돌, '왝더독'에 갇힌 한국 증시",
+            "link": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE55c0hSVy1MT3hfanpEVFdjNkdwZWU2QXV6bUMtWXRRc3ZlVkYyNm94dEpXbW9aX3JzTVhTV3kwbXFRNXd0c21fNndKTFRSTWhYOGM2QVVlQ25kYkRWNnQ2bA?oc=5"
+          }
+        ]
+      },
+      {
+        "word": "레버리지",
+        "count": 4,
+        "trend": "new",
+        "score": 16.0,
+        "evidence": [
+          {
+            "type": "news",
+            "text": "비트코인 횡보세… 파생상품 레버리지 머니, XRP·도지로 이동",
+            "link": "https://news.google.com/rss/articles/CBMicEFVX3lxTE43Sy1vVmxLZ1dPNDdDU2NtWWVzbFd3QzhteGdvSkxHTHJ0dlNSV2g0TkpNTjZrakF1ei1tYVplNF85aTRGeVdnNVc3VVFpOUxqSkJQM09iRTVkb3lIaGQ4ekhpcGhjUUpjSV9ZdktWeXY?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "미국은 ADR, 한국은 레버리지…SK하이닉스 둘러싼 '이중 꼬리'가 시장 흔든다 [증시는 왜]",
+            "link": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFA5cWlXOWp6ZXVaWW5vQ1B3cXZKaVhudkhFRTlIQ0MxVG9fZDh5a3ZfTXRJRlItdEprNmlVZmtrWGEtOE9lSVNmX2tuZVZzTnZPMkhsdkdZUldSdw?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "\"한국 증시는 오징어 게임\"...월가도 삼전닉스 레버리지 ETF 우려",
+            "link": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE5xREVINkUweFpYMDdlcU5HSzFxUkpOdzdialZxNGJkZXlETnVyVVROb3Y0Q3JIZEdKRXR1T2pTTEpQZHFUNnRFcWhwSUVXLW9semlCemhWQTRvYUhFNVE?oc=5"
+          }
+        ]
+      },
+      {
+        "word": "미국",
+        "count": 4,
+        "trend": "new",
+        "score": 16.0,
+        "evidence": [
+          {
+            "type": "news",
+            "text": "[미국 특징주] 스트래티지의 비트코인 매도로 흔들리는 '암호화폐 비축 기업'들에 다시 이목 집중",
+            "link": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE15OGh2TDhMQnE3NkZ5WTVSMUlLa1ZiSGswQnBmc004X1YzbTBnWEJRMTQ1QzhORGdrTFFIOEc4T3VIYy1hVndqOWwwMGRSZUtoZTZzU2JUSHY2cl9U?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "미국은 ADR, 한국은 레버리지…SK하이닉스 둘러싼 '이중 꼬리'가 시장 흔든다 [증시는 왜]",
+            "link": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFA5cWlXOWp6ZXVaWW5vQ1B3cXZKaVhudkhFRTlIQ0MxVG9fZDh5a3ZfTXRJRlItdEprNmlVZmtrWGEtOE9lSVNmX2tuZVZzTnZPMkhsdkdZUldSdw?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "SK하이닉스, 미국 증시 초대형 상장…약 39조원 조달",
+            "link": "https://news.google.com/rss/articles/CBMiXEFVX3lxTE9WRHNIVTQtNmw3TDZNZGxJQjFQSjVuZGtjYzRibHZwaXpZd21XVmVyX1pjX2xRaXlVWVBkVXFkdWRLR2RVMThYeVp4R0JGZ1JfMDBlMVJQbHRON2FN0gFiQVVfeXFMUE1kSXlWZWtDcm5fNTZGOFk5cURBWDlpMWRoWWV0SVRmaE9UbUpOTnAyQ05kV3FOc040enZXQmhiVnQwUDlSc2xnWTQ5WkVDQVY0VzZHYzVDeFFGaDg4cmhGbXc?oc=5"
+          }
+        ]
+      },
+      {
+        "word": "주식",
+        "count": 4,
+        "trend": "new",
+        "score": 16.0,
+        "evidence": [
+          {
+            "type": "news",
+            "text": "[굿모닝! 금융지식] 외국인이 주식을 사면 왜 증시가 오를까",
+            "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5rTDFYb1gyNFZkZFFZdmN4OTNGT2o1ZFREeGZYOFdZZVBQZDhrZnhPdVA4Z0RDWFU3Zm1tVDVUR2tOVkZhX2ppXzlXdGlaX0JtVmJ4djI1UVR0azBHTjJDNEg1N1V0ZlRzMzFMYw?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "SK하이닉스 미국 주식, 왜 한국보다 50% 비싸졌나 [마켓무버의 국장 힌트]",
+            "link": "https://news.google.com/rss/articles/CBMid0FVX3lxTE5HdUFhMGtjWXNEbXJvelBjZXpQdmdTNWVzOFlnRTh0NjgxWmxOWnZvNkF2NURtTE9DOWtqbk9ENm5mUzdXYTBDQU0wREhQcV93akdDOTFBbVpUcDM3aG0tbUVnSEJIaHM1T0dOMmwydUFyaVdkcjA0?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "염승환·김익환의 대한민국 주식투자 지도 - 김익환 한국경제신문 기자 외",
+            "link": "https://news.google.com/rss/articles/CBMiT0FVX3lxTFBsS3pyT2FndmZ5dmpZVVhsT3RHX3Jic2pwX3RPbjFWb2RZVnUwaDloeFlUamhuTjBud0JrZG55NV9YekN0X085bndDT0pzM3c?oc=5"
+          }
+        ]
+      },
+      {
+        "word": "이동",
+        "count": 3,
+        "trend": "new",
+        "score": 9.0,
+        "evidence": [
+          {
+            "type": "news",
+            "text": "美 정부, 압수 비트코인·이더리움 4000억원 상당 이동…매각 신호일까",
+            "link": "https://news.google.com/rss/articles/CBMiT0FVX3lxTFBDb3dYU2ZkOXlZZVpabFBycHZ1WUhTdlRTUTdmMXVOa0c3V2luM0hyYXlZUHpTck5WS3N2Tl9ZRUlHbHM1c3poRU9vcnRtd0U?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "비트코인 횡보세… 파생상품 레버리지 머니, XRP·도지로 이동",
+            "link": "https://news.google.com/rss/articles/CBMicEFVX3lxTE43Sy1vVmxLZ1dPNDdDU2NtWWVzbFd3QzhteGdvSkxHTHJ0dlNSV2g0TkpNTjZrakF1ei1tYVplNF85aTRGeVdnNVc3VVFpOUxqSkJQM09iRTVkb3lIaGQ4ekhpcGhjUUpjSV9ZdktWeXY?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "암호화폐 시장 50일 이동평균선 돌파…비트코인 7만 3,000~7만 4,000달러 주목",
+            "link": "https://news.google.com/rss/articles/CBMiSkFVX3lxTFBXUmdUMTlWNUNkNnZkQkdHcHI4RDlKcnNOUjBGOGJmSTNfRFA1eGxyeDVXTFRyQU52TVNDUnFsVnh0aS0xS2pZYjdn?oc=5"
+          }
+        ]
+      },
+      {
+        "word": "암호화폐",
+        "count": 3,
+        "trend": "new",
+        "score": 9.0,
+        "evidence": [
+          {
+            "type": "news",
+            "text": "블랙록, 암호화폐 시장서 고전…디지털자산 펀드 규모 40% 급감",
+            "link": "https://news.google.com/rss/articles/CBMicEFVX3lxTFB0c0VqdHJkNmJBeWU3eHVsaUstUTQ1QXNfUkxBY2x0UDdFekdscnRUTkxFdF94YzgtdS14ZnFnUDlJa0NmZnRRN243RlRza05na3V4djNfX3ZucXRCQTVHcGVjZWNZYndnUERXM2FVTTXSAXRBVV95cUxPd2tSWHl0RXhrSlYyYWFfSVppaXJtcU5jaHZqMl9BYXFsaTJsNnQ2cTZpeFNWeVhma05IeEdkN0E0d3VJU1RzZGlJWVNfOE5uNGdZaDluS25ZQVVhZEl2dHRxT1dfOHdQRjE0cjBRMnVQQnFPSQ?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "SRX 글로벌, 암호화폐 자산 배분 모델 'EMJX' 모의 투자서 25% 수익률 기록",
+            "link": "https://news.google.com/rss/articles/CBMickFVX3lxTE1yNU96bWwteGNiY08zeHk4QXJPckhtTUdTclFpalRiWGJFVTBCdWxJTGJOZGMzYVNzY3NlcmpSX0gwZjhQdmtiQmMxdmhhOGRaR1V6SzNyS2NsZ1hOLUVKUDYyaDJlZndWZndra2RrcEtTdw?oc=5"
+          },
+          {
+            "type": "news",
+            "text": "암호화폐 시장 50일 이동평균선 돌파…비트코인 7만 3,000~7만 4,000달러 주목",
+            "link": "https://news.google.com/rss/articles/CBMiSkFVX3lxTFBXUmdUMTlWNUNkNnZkQkdHcHI4RDlKcnNOUjBGOGJmSTNfRFA1eGxyeDVXTFRyQU52TVNDUnFsVnh0aS0xS2pZYjdn?oc=5"
+          }
+        ]
+      }
+    ]
+  },
+  "prompt_sources": {
+    "status": "ok",
+    "items": []
+  }
 }
