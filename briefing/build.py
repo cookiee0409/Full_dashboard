@@ -6,8 +6,8 @@ and marks only that section "status": "error" (기획서 §2 설계 원칙).
 """
 from __future__ import annotations
 
-import asyncio
 import json
+import os
 import re
 import sys
 from datetime import datetime, timedelta, timezone
@@ -99,7 +99,7 @@ def main():
 
     messages_by_channel, new_state = {}, state
     try:
-        messages_by_channel, new_state = asyncio.run(collect_telegram.collect(channels_config, state))
+        messages_by_channel, new_state = collect_telegram.collect(channels_config, state)
     except Exception as error:
         print(f"[briefing] collect_telegram failed: {error}", file=sys.stderr)
 

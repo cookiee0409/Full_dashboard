@@ -1,5 +1,3 @@
 __pycache__/
 *.pyc
 scripts/_twitter_map_ids_cache.json
-briefing/*.session
-briefing/*.session-journal

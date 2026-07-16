@@ -22,13 +22,12 @@ jobs:
       - run: pip install -r briefing/requirements.txt
 
       - name: Run briefing pipeline
+        # 공개 채널 웹 스크래핑 방식이라 텔레그램 API 키·세션이 필요 없습니다.
+        # "1"로 두면 briefing.json에 요약 하이라이트만 남기고 채널별 원문
+        # 전체 아카이브는 커밋 히스토리에서 제외합니다("채널별 전체 보기"는 비게 됨).
+        # 공개 채널이라 원문을 남겨도 무방하므로 기본값은 "0"(전체 보기 활성).
         env:
-          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
-          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
-          TELEGRAM_SESSION: ${{ secrets.TELEGRAM_SESSION }}
-          # 저장소가 public이면 "1"로 두세요. briefing.json에 요약 하이라이트만
-          # 남기고 채널별 원문 전체 아카이브는 커밋에서 제외합니다.
-          BRIEFING_PUBLIC_SAFE: "1"
+          BRIEFING_PUBLIC_SAFE: "0"
         run: python briefing/build.py
 
       - name: Commit updated data

@@ -1,2 +1,1 @@
-telethon>=1.36
 kiwipiepy>=0.18
