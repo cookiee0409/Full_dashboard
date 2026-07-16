@@ -329,12 +329,24 @@ def coins_market(category: str | None = None, per_page: int = 30):
                        for c in data], "updatedAt": int(time.time())}
 
 
-GMGN_CHAIN_SLUG = {"solana": "sol", "ethereum": "eth", "binance-smart-chain": "bsc", "base": "base"}
-# GMGN's public trend board exposes these chains directly.  "Robinhood" was a
-# CoinGecko ecosystem category, not a chain, and therefore could never fill.
+GMGN_CHAIN_SLUG = {"solana": "sol", "ethereum": "eth", "binance-smart-chain": "bsc",
+                   "base": "base", "robinhood": "robinhood"}
+# GMGN's public trend board (gmgn.ai/trend?chain=...) exposes these chains
+# directly — including Robinhood Chain (verified: rank/robinhood/... returns
+# rows and gmgn.ai/robinhood/token/<address> resolves).
 MEME_CHAIN_ORDER = [("solana", "Solana"), ("binance-smart-chain", "BSC"),
-                    ("base", "Base"), ("ethereum", "Ethereum")]
-GMGN_RANK_CHAIN = {"solana": "sol", "binance-smart-chain": "bsc", "base": "base", "ethereum": "eth"}
+                    ("base", "Base"), ("ethereum", "Ethereum"), ("robinhood", "Robinhood")]
+GMGN_RANK_CHAIN = {"solana": "sol", "binance-smart-chain": "bsc", "base": "base",
+                   "ethereum": "eth", "robinhood": "robinhood"}
+
+# GMGN's trend board occasionally carries broken oracle rows (e.g. a $59-
+# liquidity token reporting a 2.3e18 market cap). No memecoin is worth $500B;
+# treat anything above as garbage so it cannot occupy the top of the board.
+MEME_MAX_SANE_MARKET_CAP = 5e11
+
+
+def _sane_cap(value):
+    return value if value is not None and 0 < value < MEME_MAX_SANE_MARKET_CAP else None
 
 
 def gmgn_link(chain: str | None, address: str | None):
@@ -343,14 +355,15 @@ def gmgn_link(chain: str | None, address: str | None):
 
 
 def gmgn_rank(chain_id: str, gmgn_chain: str):
-    """Return the top 20 market-cap entries from GMGN's public trend board."""
+    """Return the top 20 sane market-cap entries from GMGN's public trend board."""
     url = (f"https://gmgn.ai/defi/quotation/v1/rank/{gmgn_chain}/swaps/24h?"
            "orderby=marketcap&direction=desc&filters[]=not_honeypot&filters[]=verified")
     request = Request(url, headers={"User-Agent": GMGN_UA, "Accept": "application/json, text/plain, */*",
                                     "Accept-Language": "en-US,en;q=0.9", "Referer": "https://gmgn.ai/"})
     with urlopen(request, timeout=6) as response:
         payload = json.loads(response.read().decode("utf-8"))
-    rows = (payload.get("data") or {}).get("rank") or []
+    rows = [row for row in (payload.get("data") or {}).get("rank") or []
+            if _sane_cap(row.get("market_cap"))]
     return [{"id": f"gmgn:{gmgn_chain}:{row.get('address', i)}", "rank": i + 1,
              "name": row.get("name") or row.get("symbol") or "Unknown",
              "symbol": (row.get("symbol") or "—").upper(), "image": row.get("logo") or "",
@@ -397,7 +410,11 @@ def meme_chains():
     chains = [{"id": chain_id, "name": label, "count": len(chain_rows[chain_id]),
                "items": chain_rows[chain_id]}
               for chain_id, label in MEME_CHAIN_ORDER]
-    all_items = [coin for chain_id, _ in MEME_CHAIN_ORDER for coin in chain_rows[chain_id]]
+    # The "all" board is a single cross-chain market-cap ranking (not a
+    # concatenation of per-chain boards, which put a mid-cap Solana token at #1).
+    merged = [coin for chain_id, _ in MEME_CHAIN_ORDER for coin in chain_rows[chain_id]]
+    merged.sort(key=lambda coin: coin.get("marketCap") or 0, reverse=True)
+    all_items = [{**coin, "rank": i + 1} for i, coin in enumerate(merged[:80])]
     radar_pool = [coin for coin in all_items if (coin.get("marketCap") or 0) >= 5_000_000]
     result = {"items": all_items,
               "radar": sorted(radar_pool, key=lambda coin: abs(coin.get("change24") or 0), reverse=True)[:10],
