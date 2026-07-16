@@ -93,7 +93,6 @@ def main():
     state = load_json(DATA / "state.json", {})
     history = load_json(DATA / "keyword_history.json", {})
     channels_config = load_json(CONFIG / "channels.json", {"channels": []})
-    filter_config = load_json(CONFIG / "memecoin_filter.json", {"blacklist": [], "whitelist": []})
     prompt_config = load_json(CONFIG / "prompt_sources.json", {"subreddits": [], "title_keywords": []})
     stopwords = load_stopwords()
 
@@ -112,7 +111,7 @@ def main():
         briefing["crypto_brief"] = {"status": "error", "highlights": [], "raw_by_channel": {}}
 
     try:
-        briefing["meme_mentions"] = {"status": "ok", **extract_memecoins.extract(messages_by_channel, filter_config)}
+        briefing["meme_mentions"] = {"status": "ok", **extract_memecoins.extract(messages_by_channel)}
     except Exception as error:
         print(f"[briefing] meme_mentions failed: {error}", file=sys.stderr)
         briefing["meme_mentions"] = {"status": "error", "tickers": []}

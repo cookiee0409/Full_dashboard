@@ -227,9 +227,12 @@ HYPERLIQUID_ASSETS = {
     "HYPE": {"coin": "HYPE", "dex": "", "name": "HYPE"},
     "SAMSUNG": {"coin": "xyz:SMSN", "dex": "xyz", "name": "Samsung (SMSN)"},
     "SKHYNIX": {"coin": "xyz:SKHX", "dex": "xyz", "name": "SK Hynix (SKHX)"},
-    "LIT": {"coin": "hyna:LIT", "dex": "hyna", "name": "Lition (LIT)"},
+    # Lighter (the perp-dex token), listed on Hyperliquid's MAIN dex as "LIT"
+    # (verified against CoinGecko id "lighter": main-dex mid 2.365 vs CG 2.37,
+    # while the hyna:LIT HIP-3 market was off by ~40%).
+    "LIT": {"coin": "LIT", "dex": "", "name": "Lighter (LIT)"},
 }
-HYPERLIQUID_COINGECKO_FALLBACK = {"HYPE": "hyperliquid", "LIT": "lition"}
+HYPERLIQUID_COINGECKO_FALLBACK = {"HYPE": "hyperliquid", "LIT": "lighter"}
 
 
 def hyperliquid_candles(coin: str, days: int = 365):
@@ -354,8 +357,10 @@ def gmgn_link(chain: str | None, address: str | None):
     return f"https://gmgn.ai/{slug}/token/{address}" if slug and address else None
 
 
-def gmgn_rank(chain_id: str, gmgn_chain: str):
-    """Return the top 20 sane market-cap entries from GMGN's public trend board."""
+def gmgn_rank(chain_id: str, gmgn_chain: str, limit: int = 100):
+    """Return sane market-cap entries from GMGN's public trend board. The board
+    mixes memecoins with regular trending tokens (LINK, UNI, ...), so callers
+    filter the result against CoinGecko's meme-token category before display."""
     url = (f"https://gmgn.ai/defi/quotation/v1/rank/{gmgn_chain}/swaps/24h?"
            "orderby=marketcap&direction=desc&filters[]=not_honeypot&filters[]=verified")
     request = Request(url, headers={"User-Agent": GMGN_UA, "Accept": "application/json, text/plain, */*",
@@ -369,8 +374,9 @@ def gmgn_rank(chain_id: str, gmgn_chain: str):
              "symbol": (row.get("symbol") or "—").upper(), "image": row.get("logo") or "",
              "price": row.get("price"), "change24": row.get("price_change_percent") or 0,
              "marketCap": row.get("market_cap"), "volume": row.get("volume"), "spark": [],
-             "chain": chain_id, "gmgn": gmgn_link(chain_id, row.get("address"))}
-            for i, row in enumerate(rows[:20])]
+             "chain": chain_id, "address": row.get("address"),
+             "gmgn": gmgn_link(chain_id, row.get("address"))}
+            for i, row in enumerate(rows[:limit])]
 
 
 def meme_chains():
@@ -395,13 +401,30 @@ def meme_chains():
                 chain_items.append({**coin, "chain": chain_id, "gmgn": gmgn_link(chain_id, address)})
         return chain_items[:20]
 
+    # CoinGecko's meme-token category is the memecoin whitelist: GMGN's trend
+    # board also carries regular trending tokens (LINK, UNI, stables...), which
+    # must not appear on a memecoin board. Matched by address first, symbol as
+    # a fallback for bridged/wrapped listings. Robinhood Chain is exempt --
+    # CoinGecko barely indexes it, and its board is meme-native anyway.
+    meme_symbols = {coin["symbol"] for coin in fallback_items}
+    meme_addresses = {address.lower()
+                      for coin in fallback_items
+                      for address in (platforms.get(coin["id"]) or {}).values() if address}
+
+    def is_meme(row):
+        if row["chain"] == "robinhood":
+            return True
+        address = (row.get("address") or "").lower()
+        return address in meme_addresses or row["symbol"] in meme_symbols
+
     with ThreadPoolExecutor(max_workers=len(MEME_CHAIN_ORDER)) as executor:
         futures = {chain_id: executor.submit(gmgn_rank, chain_id, GMGN_RANK_CHAIN[chain_id])
                    for chain_id, _ in MEME_CHAIN_ORDER}
         chain_rows = {}
         for chain_id, _ in MEME_CHAIN_ORDER:
             try:
-                chain_rows[chain_id] = futures[chain_id].result()
+                filtered = [row for row in futures[chain_id].result() if is_meme(row)]
+                chain_rows[chain_id] = [{**row, "rank": i + 1} for i, row in enumerate(filtered[:20])]
             except Exception:
                 # GMGN's Cloudflare edge can deny server-side requests.  The
                 # fallback preserves a useful, non-empty board in that case.
@@ -434,54 +457,118 @@ def load_briefing() -> dict:
 
 # DEX Screener's chainId strings differ from this file's CoinGecko-style chain
 # ids (used by GMGN_CHAIN_SLUG); map them so gmgn_link() keeps working.
-DEXSCREENER_CHAIN_MAP = {"solana": "solana", "base": "base", "bsc": "binance-smart-chain", "ethereum": "ethereum"}
-DEXSCREENER_CHAIN_PRIORITY = ["solana", "base", "bsc", "ethereum"]
+DEXSCREENER_CHAIN_MAP = {"solana": "solana", "base": "base", "bsc": "binance-smart-chain",
+                         "ethereum": "ethereum", "robinhood": "robinhood"}
 
 
-def dexscreener_pair(ticker: str):
-    """Best pair for a ticker: filter to the chain-priority order (Solana >
-    Base > BSC > ETH), then pick the highest-liquidity pair within that chain."""
-    data = fetch_json("https://api.dexscreener.com/latest/dex/search?q=" + quote(ticker))
+def _pair_liquidity(pair):
+    return float((pair.get("liquidity") or {}).get("usd") or 0)
+
+
+def dexscreener_token(address: str):
+    """Resolve a contract address to its highest-liquidity pair where the CA is
+    the BASE token (so quote-side matches like SOL/USDC pools don't hijack it)."""
+    data = fetch_json("https://api.dexscreener.com/latest/dex/tokens/" + quote(address))
     pairs = [p for p in (data.get("pairs") or [])
-             if (p.get("baseToken", {}).get("symbol") or "").upper() == ticker.upper()]
-    if not pairs:
-        return None
-    liquidity = lambda p: float((p.get("liquidity") or {}).get("usd") or 0)
-    for chain in DEXSCREENER_CHAIN_PRIORITY:
-        chain_pairs = [p for p in pairs if p.get("chainId") == chain]
-        if chain_pairs:
-            return max(chain_pairs, key=liquidity)
-    return max(pairs, key=liquidity)
+             if (p.get("baseToken", {}).get("address") or "").lower() == address.lower()]
+    return max(pairs, key=_pair_liquidity) if pairs else None
+
+
+def _mention_blacklist() -> set:
+    """Majors/stables that are never memecoins, shared with the pipeline config."""
+    config = _load_briefing_config("memecoin_filter.json")
+    return {s.upper() for s in config.get("blacklist", [])}
+
+
+def _load_briefing_config(name: str) -> dict:
+    try:
+        return json.loads((PROJECT_ROOT / "briefing" / "config" / name).read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
 
 
 def meme_mentions():
+    """Rows for the '텔레그램 언급' tab. The pipeline now emits CONTRACT
+    ADDRESSES found in messages (not word-shaped tickers), and each address is
+    verified against DEX Screener before display -- an entry that doesn't
+    resolve to a real DEX-traded token is dropped, which is what keeps AMA-type
+    word noise off the board."""
     briefing = load_briefing()
     section = briefing.get("meme_mentions") or {}
-    tickers = section.get("tickers") or []
+    entries = section.get("tickers") or []
+    blacklist = _mention_blacklist()
 
     def build(entry):
-        symbol = entry["ticker"]
-        base = {"id": f"mention:{symbol}", "symbol": symbol, "name": symbol,
-                "mentions": entry.get("mentions"), "sample_text": entry.get("sample_text"),
-                "sample_link": entry.get("sample_link"), "x_search": "https://x.com/search?q=%24" + quote(symbol),
-                "price": None, "change24": 0, "marketCap": None, "chain": None, "gmgn": None, "image": ""}
+        address = entry.get("address")
+        if not address:
+            return None  # legacy word-based entry from an old briefing.json
         try:
-            pair = dexscreener_pair(symbol)
+            pair = dexscreener_token(address)
         except Exception:
             pair = None
-        if pair:
-            chain_id = DEXSCREENER_CHAIN_MAP.get(pair.get("chainId"), pair.get("chainId"))
-            base.update({"name": (pair.get("baseToken") or {}).get("name") or symbol,
-                        "price": float(pair["priceUsd"]) if pair.get("priceUsd") else None,
-                        "change24": (pair.get("priceChange") or {}).get("h24") or 0,
-                        "marketCap": pair.get("fdv") or pair.get("marketCap"), "chain": chain_id,
-                        "gmgn": gmgn_link(chain_id, (pair.get("baseToken") or {}).get("address")),
-                        "image": (pair.get("info") or {}).get("imageUrl", "")})
-        return base
+        if not pair:
+            return None  # unverified CA -- not a tradable token
+        token = pair.get("baseToken") or {}
+        symbol = (token.get("symbol") or "?").upper()
+        if symbol in blacklist:
+            return None  # a major/stable CA is not a memecoin mention
+        chain_id = DEXSCREENER_CHAIN_MAP.get(pair.get("chainId"), pair.get("chainId"))
+        return {"id": f"mention:{address}", "symbol": symbol, "name": token.get("name") or symbol,
+                "mentions": entry.get("mentions"), "sample_text": entry.get("sample_text"),
+                "sample_link": entry.get("sample_link"), "x_search": "https://x.com/search?q=%24" + quote(symbol),
+                "price": float(pair["priceUsd"]) if pair.get("priceUsd") else None,
+                "change24": (pair.get("priceChange") or {}).get("h24") or 0,
+                "marketCap": _sane_cap(pair.get("fdv") or pair.get("marketCap")),
+                "chain": chain_id, "address": token.get("address") or address,
+                "gmgn": gmgn_link(chain_id, token.get("address") or address),
+                "image": (pair.get("info") or {}).get("imageUrl", "")}
 
-    with ThreadPoolExecutor(max_workers=min(8, len(tickers) or 1)) as executor:
-        items = list(executor.map(build, tickers))
+    with ThreadPoolExecutor(max_workers=min(8, len(entries) or 1)) as executor:
+        items = [item for item in executor.map(build, entries) if item]
+    items.sort(key=lambda item: item.get("mentions") or 0, reverse=True)
     return {"items": items, "status": section.get("status", "pending"), "updatedAt": int(time.time())}
+
+
+# --- OHLC history for coins/memecoins so every asset gets the same candlestick
+# chart the stock rows use (기획서 개편: 단일 차트 컴포넌트). ---
+GECKOTERMINAL_NETWORK = {"solana": "solana", "ethereum": "eth", "binance-smart-chain": "bsc",
+                         "base": "base", "robinhood": "robinhood"}
+
+
+def coingecko_ohlc(coin_id: str):
+    """365d OHLC for a CoinGecko-listed coin (4-day candles at this range --
+    the free tier's finest granularity past 90 days). No volume series."""
+    rows = fetch_json("https://api.coingecko.com/api/v3/coins/" + quote(coin_id)
+                      + "/ohlc?vs_currency=usd&days=365")
+    history = {"dates": [], "open": [], "high": [], "low": [], "close": [], "volume": []}
+    for ts, open_, high, low, close in rows:
+        history["dates"].append(datetime.fromtimestamp(ts / 1000, tz=timezone.utc).strftime("%Y-%m-%d"))
+        history["open"].append(open_); history["high"].append(high)
+        history["low"].append(low); history["close"].append(close); history["volume"].append(0)
+    return history
+
+
+def geckoterminal_history(chain: str, address: str):
+    """Daily OHLCV for a DEX token via GeckoTerminal: top pool by liquidity,
+    then that pool's day candles (includes volume, unlike CoinGecko OHLC)."""
+    network = GECKOTERMINAL_NETWORK.get(chain)
+    if not network:
+        raise ValueError("Unsupported chain: " + str(chain))
+    pools = fetch_json(f"https://api.geckoterminal.com/api/v2/networks/{network}/tokens/"
+                       + quote(address) + "/pools?page=1")
+    pool_rows = pools.get("data") or []
+    if not pool_rows:
+        raise ValueError("No pools for token")
+    pool_address = pool_rows[0]["attributes"]["address"]
+    ohlcv = fetch_json(f"https://api.geckoterminal.com/api/v2/networks/{network}/pools/"
+                       + quote(pool_address) + "/ohlcv/day?aggregate=1&limit=365")
+    candles = sorted((ohlcv.get("data") or {}).get("attributes", {}).get("ohlcv_list") or [])
+    history = {"dates": [], "open": [], "high": [], "low": [], "close": [], "volume": []}
+    for ts, open_, high, low, close, volume in candles:
+        history["dates"].append(datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d"))
+        history["open"].append(open_); history["high"].append(high)
+        history["low"].append(low); history["close"].append(close); history["volume"].append(volume)
+    return history
 
 
 NAVER_MARKET_SUFFIX = {"KOSPI": ".KS", "KOSDAQ": ".KQ"}
@@ -601,6 +688,18 @@ class Handler(SimpleHTTPRequestHandler):
                 symbol = params.get("symbol", [None])[0]
                 labels = [symbol] if symbol in HYPERLIQUID_ASSETS else list(HYPERLIQUID_ASSETS)
                 data, ttl = {"items": [hyperliquid_quote(l) for l in labels], "updatedAt": int(time.time())}, 60
+            elif parsed.path == "/api/coin-history":
+                coin_id = params.get("id", [""])[0]
+                chain = params.get("chain", [""])[0]
+                address = params.get("address", [""])[0]
+                if coin_id:
+                    data = cached("hist:cg:" + coin_id, 600, lambda: {"history": coingecko_ohlc(coin_id)})
+                elif chain and address:
+                    data = cached(f"hist:gt:{chain}:{address}", 600,
+                                  lambda: {"history": geckoterminal_history(chain, address)})
+                else:
+                    return self.json({"error": "id 또는 chain+address가 필요합니다."}, 400)
+                ttl = 600
             else: return self.json({"error": "Not found"}, 404)
             self.json(data, ttl=ttl)
         except Exception as error:
@@ -617,7 +716,10 @@ class Handler(SimpleHTTPRequestHandler):
             data = json.loads(target.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             return self.json({"error": "Not found"}, 404)
-        self.json(data, ttl=60)
+        # ttl=0 -> no-store: the stale-while-revalidate header the API routes
+        # use made the browser paint a stale briefing on first load. Local-dev
+        # only; on Vercel these files are static assets with their own caching.
+        self.json(data, ttl=0)
 
 
 # Vercel Python runtime entrypoint. Locally, the same Handler remains a normal
