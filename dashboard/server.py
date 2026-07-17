@@ -529,31 +529,126 @@ def meme_mentions():
     return {"items": items, "status": section.get("status", "pending"), "updatedAt": int(time.time())}
 
 
-# --- OHLC history for coins/memecoins so every asset gets the same candlestick
-# chart the stock rows use (기획서 개편: 단일 차트 컴포넌트). ---
+# --- Unified OHLC history so every asset (stock, index, hyperliquid, coin,
+# DEX memecoin) feeds the SAME candlestick chart, at 1h / 4h / 1d resolution.
+# 1w / 1M are aggregated on the client from 1d. ---
 GECKOTERMINAL_NETWORK = {"solana": "solana", "ethereum": "eth", "binance-smart-chain": "bsc",
                          "base": "base", "robinhood": "robinhood"}
+INTRADAY_FMT = "%Y-%m-%d %H:%M"  # a space in the label marks an intraday bar (client keys off it)
+DAILY_FMT = "%Y-%m-%d"
 
 
-def coingecko_ohlc(coin_id: str):
-    """365d OHLC for a CoinGecko-listed coin (4-day candles at this range --
-    the free tier's finest granularity past 90 days). No volume series."""
+def _emit_ts(seconds, intraday):
+    return datetime.fromtimestamp(seconds, tz=timezone.utc).strftime(INTRADAY_FMT if intraday else DAILY_FMT)
+
+
+def _aggregate_seconds(series: dict, seconds: int) -> dict:
+    """Bucket an epoch-keyed OHLCV series into fixed-width candles (e.g. 60m -> 4h)."""
+    buckets, order = {}, []
+    for i, ts in enumerate(series["t"]):
+        key = int(ts) // seconds
+        if key not in buckets:
+            buckets[key] = {"t": key * seconds, "open": series["open"][i], "high": series["high"][i],
+                            "low": series["low"][i], "close": series["close"][i], "volume": series["volume"][i] or 0}
+            order.append(key)
+        else:
+            b = buckets[key]
+            b["high"] = max(b["high"] if b["high"] is not None else b["close"], series["high"][i] if series["high"][i] is not None else series["close"][i])
+            b["low"] = min(b["low"] if b["low"] is not None else b["close"], series["low"][i] if series["low"][i] is not None else series["close"][i])
+            b["close"] = series["close"][i]
+            b["volume"] += series["volume"][i] or 0
+    out = {"t": [], "open": [], "high": [], "low": [], "close": [], "volume": []}
+    for key in order:
+        for field in out:
+            out[field].append(buckets[key][field])
+    return out
+
+
+def _finalize(series: dict, intraday: bool) -> dict:
+    return {"dates": [_emit_ts(ts, intraday) for ts in series["t"]],
+            "open": series["open"], "high": series["high"], "low": series["low"],
+            "close": series["close"], "volume": series["volume"]}
+
+
+def yahoo_history(symbol: str, interval: str):
+    """Yahoo chart for stocks/indices/FX. Intraday uses 60m bars (4h aggregated x4)."""
+    iv, rng = {"1h": ("60m", "3mo"), "4h": ("60m", "1y"), "1d": ("1d", "2y")}[interval]
+    url = "https://query1.finance.yahoo.com/v8/finance/chart/" + quote(symbol) + f"?range={rng}&interval={iv}"
+    result = fetch_json(url)["chart"]["result"][0]
+    timestamps = result.get("timestamp") or []
+    q = (result.get("indicators", {}).get("quote") or [{}])[0]
+    series = {"t": [], "open": [], "high": [], "low": [], "close": [], "volume": []}
+    for i, ts in enumerate(timestamps):
+        close = q.get("close", [])[i] if i < len(q.get("close", [])) else None
+        if close is None:
+            continue
+        series["t"].append(ts)
+        series["open"].append(q.get("open", [None])[i]); series["high"].append(q.get("high", [None])[i])
+        series["low"].append(q.get("low", [None])[i]); series["close"].append(close)
+        series["volume"].append(q.get("volume", [0])[i] or 0)
+    if interval == "4h":
+        series = _aggregate_seconds(series, 14400)
+    return _finalize(series, interval != "1d")
+
+
+def hyperliquid_history(label: str, interval: str):
+    asset = HYPERLIQUID_ASSETS[label]
+    span_ms = {"1h": 30 * 86400000, "4h": 120 * 86400000, "1d": 365 * 86400000}[interval]
+    end = int(time.time() * 1000)
+    rows = fetch_json_post("https://api.hyperliquid.xyz/info",
+                            {"type": "candleSnapshot", "req": {"coin": asset["coin"], "interval": interval,
+                                                                "startTime": end - span_ms, "endTime": end}})
+    series = {"t": [], "open": [], "high": [], "low": [], "close": [], "volume": []}
+    for row in rows or []:
+        series["t"].append(row["t"] / 1000)
+        series["open"].append(float(row["o"])); series["high"].append(float(row["h"]))
+        series["low"].append(float(row["l"])); series["close"].append(float(row["c"])); series["volume"].append(float(row["v"]))
+    return _finalize(series, interval != "1d")
+
+
+BINANCE_INTERVAL = {"1h": "1h", "4h": "4h", "1d": "1d"}
+
+
+def binance_klines(ticker: str, interval: str):
+    url = ("https://api.binance.com/api/v3/klines?symbol=" + quote(ticker.upper()) + "USDT"
+           + "&interval=" + BINANCE_INTERVAL[interval] + "&limit=500")
+    rows = fetch_json(url)
+    series = {"t": [], "open": [], "high": [], "low": [], "close": [], "volume": []}
+    for row in rows:
+        series["t"].append(row[0] / 1000)
+        series["open"].append(float(row[1])); series["high"].append(float(row[2]))
+        series["low"].append(float(row[3])); series["close"].append(float(row[4])); series["volume"].append(float(row[5]))
+    return _finalize(series, interval != "1d")
+
+
+def coingecko_ohlc(coin_id: str, interval: str = "1d"):
+    """Fallback coin OHLC when Binance has no USDT pair. Free tier has no true
+    1h; day counts pick the finest granularity CoinGecko offers per range."""
+    days = {"1h": 1, "4h": 7, "1d": 365}[interval]
     rows = fetch_json("https://api.coingecko.com/api/v3/coins/" + quote(coin_id)
-                      + "/ohlc?vs_currency=usd&days=365")
+                      + f"/ohlc?vs_currency=usd&days={days}")
+    intraday = interval != "1d"
     history = {"dates": [], "open": [], "high": [], "low": [], "close": [], "volume": []}
     for ts, open_, high, low, close in rows:
-        history["dates"].append(datetime.fromtimestamp(ts / 1000, tz=timezone.utc).strftime("%Y-%m-%d"))
+        history["dates"].append(_emit_ts(ts / 1000, intraday))
         history["open"].append(open_); history["high"].append(high)
         history["low"].append(low); history["close"].append(close); history["volume"].append(0)
     return history
 
 
-def geckoterminal_history(chain: str, address: str):
-    """Daily OHLCV for a DEX token via GeckoTerminal: top pool by liquidity,
-    then that pool's day candles (includes volume, unlike CoinGecko OHLC)."""
+def coin_history(coin_id: str, ticker: str, interval: str):
+    try:
+        return binance_klines(ticker or coin_id, interval)
+    except Exception:
+        return coingecko_ohlc(coin_id, interval)
+
+
+def geckoterminal_history(chain: str, address: str, interval: str = "1d"):
+    """OHLCV for a DEX token via GeckoTerminal: top pool by liquidity, then its candles."""
     network = GECKOTERMINAL_NETWORK.get(chain)
     if not network:
         raise ValueError("Unsupported chain: " + str(chain))
+    timeframe, aggregate = {"1h": ("hour", 1), "4h": ("hour", 4), "1d": ("day", 1)}[interval]
     pools = fetch_json(f"https://api.geckoterminal.com/api/v2/networks/{network}/tokens/"
                        + quote(address) + "/pools?page=1")
     pool_rows = pools.get("data") or []
@@ -561,14 +656,33 @@ def geckoterminal_history(chain: str, address: str):
         raise ValueError("No pools for token")
     pool_address = pool_rows[0]["attributes"]["address"]
     ohlcv = fetch_json(f"https://api.geckoterminal.com/api/v2/networks/{network}/pools/"
-                       + quote(pool_address) + "/ohlcv/day?aggregate=1&limit=365")
+                       + quote(pool_address) + f"/ohlcv/{timeframe}?aggregate={aggregate}&limit=500")
     candles = sorted((ohlcv.get("data") or {}).get("attributes", {}).get("ohlcv_list") or [])
+    intraday = interval != "1d"
     history = {"dates": [], "open": [], "high": [], "low": [], "close": [], "volume": []}
     for ts, open_, high, low, close, volume in candles:
-        history["dates"].append(datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d"))
+        history["dates"].append(_emit_ts(ts, intraday))
         history["open"].append(open_); history["high"].append(high)
         history["low"].append(low); history["close"].append(close); history["volume"].append(volume)
     return history
+
+
+def asset_history(interval: str, params: dict) -> dict:
+    hl = params.get("hl", [None])[0]
+    chain = params.get("chain", [None])[0]
+    address = params.get("address", [None])[0]
+    stock = params.get("stock", [None])[0]
+    coin = params.get("coin", [None])[0]
+    ticker = params.get("sym", [None])[0]
+    if hl in HYPERLIQUID_ASSETS:
+        return {"history": hyperliquid_history(hl, interval)}
+    if chain and address:
+        return {"history": geckoterminal_history(chain, address, interval)}
+    if coin:
+        return {"history": coin_history(coin, ticker, interval)}
+    if stock:
+        return {"history": yahoo_history(stock, interval)}
+    raise ValueError("자산 식별 파라미터가 필요합니다.")
 
 
 NAVER_MARKET_SUFFIX = {"KOSPI": ".KS", "KOSDAQ": ".KQ"}
@@ -642,6 +756,14 @@ class Handler(SimpleHTTPRequestHandler):
     def log_message(self, fmt, *args):
         print("[hub] " + fmt % args)
 
+    def end_headers(self):
+        # Force browsers to revalidate static assets (html/js/css) so a redeploy
+        # or local edit is picked up instead of a stale cached copy. API/data
+        # responses set their own Cache-Control via json().
+        if not self.path.startswith(("/api/", "/data/")):
+            self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
+
     def json(self, data, status=200, ttl=0):
         encoded = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
@@ -688,18 +810,13 @@ class Handler(SimpleHTTPRequestHandler):
                 symbol = params.get("symbol", [None])[0]
                 labels = [symbol] if symbol in HYPERLIQUID_ASSETS else list(HYPERLIQUID_ASSETS)
                 data, ttl = {"items": [hyperliquid_quote(l) for l in labels], "updatedAt": int(time.time())}, 60
-            elif parsed.path == "/api/coin-history":
-                coin_id = params.get("id", [""])[0]
-                chain = params.get("chain", [""])[0]
-                address = params.get("address", [""])[0]
-                if coin_id:
-                    data = cached("hist:cg:" + coin_id, 600, lambda: {"history": coingecko_ohlc(coin_id)})
-                elif chain and address:
-                    data = cached(f"hist:gt:{chain}:{address}", 600,
-                                  lambda: {"history": geckoterminal_history(chain, address)})
-                else:
-                    return self.json({"error": "id 또는 chain+address가 필요합니다."}, 400)
-                ttl = 600
+            elif parsed.path == "/api/history":
+                interval = params.get("interval", ["1d"])[0]
+                if interval not in ("1h", "4h", "1d"):
+                    interval = "1d"
+                key = "hist:" + interval + ":" + "|".join(params.get(k, [""])[0]
+                                                           for k in ("hl", "chain", "address", "stock", "coin"))
+                data, ttl = cached(key, 300, lambda: asset_history(interval, params)), 300
             else: return self.json({"error": "Not found"}, 404)
             self.json(data, ttl=ttl)
         except Exception as error:

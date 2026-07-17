@@ -118,139 +118,151 @@ function lineChartWithAxes(values) {
   return `<svg viewBox="0 0 ${W} ${H}" class="axis-chart ${cls}" preserveAspectRatio="none"><defs><linearGradient id="shade" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".28"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs>${axisGrid(ticks,y,plotRight)}<path fill="url(#shade)" d="M ${points} L ${x(n-1)} ${padT+plotH} L 0 ${padT+plotH} Z"/><polyline fill="none" stroke="currentColor" stroke-width="2" points="${points}"/>${xLabels}</svg>`;
 }
 
-function aggregateChartHistory(history) {
-  if (chartInterval === 'day') return history;
-  const grouped = new Map();
+// ===== Unified TradingView-style candlestick chart =====
+// Every asset (stock, index, hyperliquid, coin, DEX memecoin) renders the same
+// chart. Data is fetched per interval from /api/history (1h/4h/1d); 주/월 are
+// aggregated on the client from the 1d series. chartRange/chartInterval are
+// declared above.
+const SERVER_INTERVAL = { '1h': '1h', '4h': '4h', day: '1d', week: '1d', month: '1d' };
+const HL_SYMBOLS = new Set(['HYPE', 'SAMSUNG', 'SKHYNIX', 'LIT']);
+const chartCache = new Map();   // `${key}:${serverInterval}` -> history
+let chartRendered = null;       // last sliced {history,item} for the expand modal
+const itemKey = item => String(item.id || item.symbol || item.name);
+const looksCoinId = s => /^[a-z][a-z0-9-]+$/.test(s || '');
+function historyQuery(item) {
+  if (item.chain && item.address) return `chain=${encodeURIComponent(item.chain)}&address=${encodeURIComponent(item.address)}`;
+  if (HL_SYMBOLS.has(item.symbol)) return `hl=${item.symbol}`;
+  const coinId = looksCoinId(item.id) ? item.id : looksCoinId(item.symbol) ? item.symbol : null;
+  if (coinId) { const ticker = /^[A-Z0-9]{2,10}$/.test(item.symbol || '') ? item.symbol : (item.name || coinId); return `coin=${encodeURIComponent(coinId)}&sym=${encodeURIComponent(ticker)}`; }
+  if (item.symbol) return `stock=${encodeURIComponent(item.symbol)}`;
+  return '';
+}
+const parseBarDate = label => new Date(label.includes(' ') ? label.replace(' ', 'T') + ':00Z' : label + 'T00:00:00Z');
+
+function aggregateWeekMonth(history, unit) {
+  const grouped = new Map(), order = [];
   history.dates.forEach((date, i) => {
-    const d = new Date(`${date}T00:00:00Z`);
-    const key = chartInterval === 'week'
+    const d = parseBarDate(date);
+    const key = unit === 'week'
       ? `${d.getUTCFullYear()}-${Math.floor((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - Date.UTC(d.getUTCFullYear(), 0, 1)) / 604800000)}`
       : `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
-    const current = grouped.get(key);
     const bar = { date, open: history.open[i], high: history.high[i], low: history.low[i], close: history.close[i], volume: history.volume[i] || 0 };
-    if (!current) grouped.set(key, bar);
-    else {
-      current.high = Math.max(current.high ?? current.close, bar.high ?? bar.close);
-      current.low = Math.min(current.low ?? current.close, bar.low ?? bar.close);
-      current.close = bar.close;
-      current.volume += bar.volume;
-      current.date = date;
-    }
+    const cur = grouped.get(key);
+    if (!cur) { grouped.set(key, bar); order.push(key); }
+    else { cur.high = Math.max(cur.high ?? cur.close, bar.high ?? bar.close); cur.low = Math.min(cur.low ?? cur.close, bar.low ?? bar.close); cur.close = bar.close; cur.volume += bar.volume; cur.date = date; }
   });
-  const bars = [...grouped.values()];
-  return { dates: bars.map(x => x.date), open: bars.map(x => x.open), high: bars.map(x => x.high), low: bars.map(x => x.low), close: bars.map(x => x.close), volume: bars.map(x => x.volume) };
+  const bars = order.map(k => grouped.get(k));
+  return { dates: bars.map(b => b.date), open: bars.map(b => b.open), high: bars.map(b => b.high), low: bars.map(b => b.low), close: bars.map(b => b.close), volume: bars.map(b => b.volume) };
 }
-
-function researchHistory(history) {
-  const source = aggregateChartHistory(history);
-  if (chartRange === 'all') return source;
-  const days = { '1m': 31, '3m': 93, '6m': 186 }[chartRange] || 93;
-  const end = new Date(`${source.dates.at(-1)}T00:00:00Z`);
-  end.setUTCDate(end.getUTCDate() - days);
-  const start = Math.max(0, source.dates.findIndex(date => new Date(`${date}T00:00:00Z`) >= end));
-  const slice = key => source[key].slice(start);
-  return { dates: slice('dates'), open: slice('open'), high: slice('high'), low: slice('low'), close: slice('close'), volume: slice('volume') };
+function sliceByRange(history, range) {
+  const n = history.dates.length;
+  if (range === 'all' || !n) return history;
+  const days = { '1m': 31, '3m': 93, '6m': 186 }[range] || 93;
+  const cutoff = parseBarDate(history.dates[n - 1]).getTime() - days * 864e5;
+  let start = 0;
+  for (let i = 0; i < n; i++) { if (parseBarDate(history.dates[i]).getTime() >= cutoff) { start = i; break; } }
+  const s = k => history[k].slice(start);
+  return { dates: s('dates'), open: s('open'), high: s('high'), low: s('low'), close: s('close'), volume: s('volume') };
 }
-
+async function fetchChartHistory(item) {
+  const si = SERVER_INTERVAL[chartInterval], ck = `${itemKey(item)}:${si}`;
+  if (chartCache.has(ck)) return chartCache.get(ck);
+  const q = historyQuery(item);
+  if (!q) return null;
+  const d = await api(`history?interval=${si}&${q}`);
+  if (d.history?.close?.length) chartCache.set(ck, d.history);
+  return d.history?.close?.length ? d.history : null;
+}
+function processHistory(base) {
+  let h = base;
+  if (chartInterval === 'week') h = aggregateWeekMonth(h, 'week');
+  else if (chartInterval === 'month') h = aggregateWeekMonth(h, 'month');
+  return sliceByRange(h, chartRange);
+}
 function shortVolume(value) {
   if (!value) return '—';
   if (value >= 1e8) return `${(value / 1e8).toFixed(1)}억`;
   if (value >= 1e4) return `${Math.round(value / 1e4)}만`;
   return Math.round(value).toLocaleString('ko-KR');
 }
-
-function researchCandleChart(history) {
-  const W = 680, H = 262, padR = 58, top = 10, priceH = 164, volumeTop = 198, volumeBottom = 240;
+function ohlcLegend(history, i, item) {
+  const o = history.open[i], h = history.high[i], l = history.low[i], c = history.close[i];
+  const prev = i ? history.close[i - 1] : o, chg = c - prev, pctv = prev ? chg / prev * 100 : 0, up = chg >= 0;
+  const cur = item.currency || 'USD';
+  return `<span class="tvl-date">${esc(history.dates[i])}</span><span>시 <b>${money(o,cur)}</b></span><span>고 <b>${money(h,cur)}</b></span><span>저 <b>${money(l,cur)}</b></span><span>종 <b>${money(c,cur)}</b></span><span>거래량 <b>${shortVolume(history.volume[i])}</b></span><span class="${up?'cs-up':'cs-down'}">${up?'+':''}${axisNum(chg)} (${up?'+':''}${pctv.toFixed(2)}%)</span>`;
+}
+function tvChart(history, item, D) {
   const n = history.close.length;
   if (!n) return '<p class="empty-note">차트 데이터가 없습니다.</p>';
-  const right = W - padR, highs = history.high.map((v, i) => v ?? history.close[i]), lows = history.low.map((v, i) => v ?? history.close[i]);
-  const { ticks, niceMin, niceMax } = niceTicks(Math.min(...lows), Math.max(...highs), 4);
-  const range = niceMax - niceMin || 1, y = value => top + priceH - (value - niceMin) / range * priceH;
-  const step = right / n, x = index => step * index + step / 2, bodyW = Math.max(1.4, Math.min(step * .62, 14));
-  const maxVolume = Math.max(...history.volume.map(v => v || 0), 1);
-  let candles = '', volumes = '';
-  history.close.forEach((close, i) => {
-    const open = history.open[i], high = history.high[i], low = history.low[i];
-    if ([open, high, low, close].some(value => value == null)) return;
-    const state = close >= open ? 'cs-up' : 'cs-down';
-    const bodyTop = y(Math.max(open, close)), bodyBottom = y(Math.min(open, close));
-    candles += `<g class="${state}"><line x1="${x(i)}" x2="${x(i)}" y1="${y(high)}" y2="${y(low)}" stroke="currentColor" stroke-width="1.25"/><rect x="${x(i) - bodyW / 2}" y="${bodyTop}" width="${bodyW}" height="${Math.max(bodyBottom - bodyTop, 1.4)}" rx="1" fill="currentColor"/></g>`;
-    const volumeY = volumeBottom - ((history.volume[i] || 0) / maxVolume) * (volumeBottom - volumeTop);
-    volumes += `<rect class="${state}" x="${x(i) - bodyW / 2}" y="${volumeY}" width="${bodyW}" height="${volumeBottom - volumeY}" fill="currentColor" opacity=".19"/>`;
+  const right = D.W - D.padR;
+  const highs = history.high.map((v, i) => v ?? history.close[i]), lows = history.low.map((v, i) => v ?? history.close[i]);
+  const { ticks, niceMin, niceMax } = niceTicks(Math.min(...lows), Math.max(...highs), 5);
+  const range = niceMax - niceMin || 1, y = v => D.top + D.priceH - (v - niceMin) / range * D.priceH;
+  const step = right / n, x = i => step * i + step / 2, bw = Math.max(1, Math.min(step * .7, 13));
+  const maxVol = Math.max(...history.volume.map(v => v || 0), 1);
+  let candles = '', vols = '';
+  history.close.forEach((c, i) => {
+    const o = history.open[i], h = history.high[i], l = history.low[i];
+    if ([o, h, l, c].some(v => v == null)) return;
+    const st = c >= o ? 'cs-up' : 'cs-down', bt = y(Math.max(o, c)), bb = y(Math.min(o, c));
+    candles += `<g class="${st}"><line x1="${x(i)}" x2="${x(i)}" y1="${y(h)}" y2="${y(l)}" stroke="currentColor" stroke-width="1"/><rect x="${x(i)-bw/2}" y="${bt}" width="${bw}" height="${Math.max(bb-bt,1)}" fill="currentColor"/></g>`;
+    const vy = D.volBottom - ((history.volume[i]||0)/maxVol)*(D.volBottom-D.volTop);
+    vols += `<rect class="${st}" x="${x(i)-bw/2}" y="${vy}" width="${bw}" height="${D.volBottom-vy}" fill="currentColor" opacity=".2"/>`;
   });
-  const grid = ticks.map(value => `<line x1="0" x2="${right}" y1="${y(value)}" y2="${y(value)}" class="research-grid"/><text x="${right + 7}" y="${y(value) + 4}" class="research-axis">${axisNum(value)}</text>`).join('');
-  const xLabels = Array.from({ length: Math.min(6, n) }, (_, k) => {
-    const index = Math.round(k * (n - 1) / Math.max(Math.min(6, n) - 1, 1));
-    return `<text x="${x(index)}" y="258" class="research-axis" text-anchor="middle">${fmtDate(history.dates[index])}</text>`;
-  }).join('');
-  const last = n - 1, lastUp = history.close[last] >= history.open[last], lastY = y(history.close[last]);
-  return `<div class="research-chart"><div class="chart-tooltip" hidden></div><svg viewBox="0 0 ${W} ${H}" class="axis-chart research-axis-chart" preserveAspectRatio="none" aria-label="캔들스틱 가격 차트">${grid}<line x1="0" x2="${right}" y1="${lastY}" y2="${lastY}" class="last-price ${lastUp ? 'cs-up' : 'cs-down'}"/>${candles}<line x1="0" x2="${right}" y1="${volumeBottom}" y2="${volumeBottom}" class="research-volume-line"/>${volumes}${xLabels}<line class="hover-crosshair" x1="0" x2="0" y1="${top}" y2="${volumeBottom}" hidden/></svg></div>`;
+  const grid = ticks.map(v => `<line x1="0" x2="${right}" y1="${y(v)}" y2="${y(v)}" class="research-grid"/><text x="${right+7}" y="${y(v)+4}" class="research-axis">${axisNum(v)}</text>`).join('');
+  const spanDays = (parseBarDate(history.dates[n-1]) - parseBarDate(history.dates[0])) / 864e5;
+  const timeMode = history.dates[0].includes(' ') && spanDays <= 3;
+  const fmtX = label => { const d = parseBarDate(label); return timeMode ? `${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}` : `${d.getUTCMonth()+1}.${d.getUTCDate()}`; };
+  const cnt = Math.min(6, n);
+  const xLabels = Array.from({ length: cnt }, (_, k) => { const i = Math.round(k*(n-1)/Math.max(cnt-1,1)); return `<text x="${x(i)}" y="${D.H-4}" class="research-axis" text-anchor="middle">${fmtX(history.dates[i])}</text>`; }).join('');
+  const last = n-1, lastUp = history.close[last] >= history.open[last], lastY = y(history.close[last]);
+  return `<div class="tv-legend">${ohlcLegend(history, last, item)}</div><div class="research-chart"><svg viewBox="0 0 ${D.W} ${D.H}" class="axis-chart research-axis-chart" preserveAspectRatio="none" aria-label="캔들 차트">${grid}<line x1="0" x2="${right}" y1="${lastY}" y2="${lastY}" class="last-price ${lastUp?'cs-up':'cs-down'}"/>${candles}<line x1="0" x2="${right}" y1="${D.volBottom}" y2="${D.volBottom}" class="research-volume-line"/>${vols}${xLabels}<line class="hover-crosshair" x1="0" x2="0" y1="${D.top}" y2="${D.volBottom}" hidden/></svg></div>`;
 }
-
-function bindResearchChart(root, history, item) {
-  const wrap = $('.research-chart', root), svg = $('.research-axis-chart', root), tooltip = $('.chart-tooltip', root), crosshair = $('.hover-crosshair', root);
-  if (!wrap || !svg || !tooltip || !crosshair) return;
-  const W = 680, right = 622, step = right / history.close.length;
-  const hide = () => { tooltip.hidden = true; crosshair.hidden = true; };
-  svg.addEventListener('mouseleave', hide);
-  svg.addEventListener('mousemove', event => {
+const CHART_DIMS = { W: 720, H: 300, padR: 62, top: 12, priceH: 196, volTop: 236, volBottom: 280 };
+const MODAL_DIMS = { W: 1040, H: 520, padR: 70, top: 14, priceH: 360, volTop: 430, volBottom: 500 };
+function bindChart(root, history, item, D) {
+  const svg = $('.research-axis-chart', root), legend = $('.tv-legend', root), crosshair = $('.hover-crosshair', root);
+  if (!svg || !crosshair) return;
+  const step = (D.W - D.padR) / history.close.length;
+  svg.addEventListener('mouseleave', () => { crosshair.hidden = true; if (legend) legend.innerHTML = ohlcLegend(history, history.close.length - 1, item); });
+  svg.addEventListener('mousemove', e => {
     const rect = svg.getBoundingClientRect();
-    const point = (event.clientX - rect.left) / rect.width * W;
-    const index = Math.max(0, Math.min(history.close.length - 1, Math.floor(point / step)));
-    const cx = step * index + step / 2;
+    const i = Math.max(0, Math.min(history.close.length - 1, Math.floor((e.clientX - rect.left) / rect.width * D.W / step)));
+    const cx = step * i + step / 2;
     crosshair.setAttribute('x1', cx); crosshair.setAttribute('x2', cx); crosshair.hidden = false;
-    const previous = index ? history.close[index - 1] : history.open[index];
-    const change = previous ? (history.close[index] - previous) / previous * 100 : 0;
-    tooltip.innerHTML = `<strong>${history.dates[index]}</strong><span>시가 ${money(history.open[index], item.currency || 'USD')}</span><span>고가 ${money(history.high[index], item.currency || 'USD')}</span><span>저가 ${money(history.low[index], item.currency || 'USD')}</span><span>종가 ${money(history.close[index], item.currency || 'USD')} <b class="${change >= 0 ? 'up' : 'down'}">(${change >= 0 ? '+' : ''}${change.toFixed(2)}%)</b></span><span>거래량 ${shortVolume(history.volume[index])}</span>`;
-    tooltip.style.left = `${Math.max(2, Math.min(72, (cx / W) * 100 + 2))}%`;
-    tooltip.hidden = false;
+    if (legend) legend.innerHTML = ohlcLegend(history, i, item);
   });
+}
+async function renderChart() {
+  const item = chartItem;
+  if (!item) return;
+  $('#chart-title').textContent = `${item.name}${item.symbol && item.symbol !== item.name ? ' · ' + item.symbol : ''}`;
+  const panel = $('#chart-panel');
+  let base;
+  try { base = await fetchChartHistory(item); } catch { base = null; }
+  if (chartItem !== item) return;              // superseded by a newer selection
+  if (!base) { panel.innerHTML = '<p class="empty-note">이 자산은 차트 데이터를 표시할 수 없습니다.</p>'; chartRendered = null; return; }
+  const history = processHistory(base);
+  chartRendered = { history, item };
+  panel.innerHTML = tvChart(history, item, CHART_DIMS);
+  bindChart(panel, history, item, CHART_DIMS);
 }
 function setChart(item) {
   if (!item) return;
   chartItem = item;
-  $('#chart-title').textContent = `${item.name} · ${item.symbol}`;
-  $('#chart-title').textContent = '주가 차트';
-  const hasHistory = item.history?.close?.length > 1;
-  $('#chart-range-toggle').style.display = hasHistory ? '' : 'none';
-  let body, summaryPct;
-  if (hasHistory) {
-    const history = researchHistory(item.history);
-    body = researchCandleChart(history);
-    summaryPct = item.changePct;
-  } else if (item.spark?.length > 1) {
-    body = lineChartWithAxes(item.spark);
-    summaryPct = item.changePct ?? item.change24 ?? ((item.spark.at(-1)-item.spark[0])/item.spark[0]*100);
-  } else {
-    $('#chart-panel').innerHTML = '<p class="empty-note">이 종목은 차트를 표시할 데이터가 없습니다.</p>';
-    return;
-  }
-  $('#chart-panel').innerHTML = body;
-  if (hasHistory) bindResearchChart($('#chart-panel'), researchHistory(item.history), item);
+  if (item.history?.close?.length > 1) chartCache.set(`${itemKey(item)}:1d`, item.history);  // seed embedded stock daily
+  $('#chart-panel').innerHTML = '<p class="empty-note">불러오는 중…</p>';
+  renderChart();
 }
-// Every asset type (stock, crypto, memecoin) shows the same research candle
-// chart: rows without OHLC history lazy-fetch it from /api/coin-history
-// (CoinGecko for listed coins, GeckoTerminal pools for DEX tokens).
-const coinHistoryQuery = x => x.chain && x.address ? `chain=${encodeURIComponent(x.chain)}&address=${encodeURIComponent(x.address)}`
-  : /^(bitcoin|ethereum)$/.test(x.symbol) ? 'id=' + x.symbol
-  : x.id && !String(x.id).includes(':') ? 'id=' + encodeURIComponent(x.id) : '';
-async function chartWithHistory(item) {
-  setChart(item);
-  const query = coinHistoryQuery(item);
-  if (item.history?.close?.length > 1 || !query) return;
-  try {
-    const d = await api('coin-history?' + query);
-    if (d.history?.close?.length > 1 && chartItem === item) setChart({ ...item, history: d.history });
-  } catch {}
-}
-$$('#chart-range-toggle button').forEach(b => b.onclick = () => { chartRange = b.dataset.range; $$('#chart-range-toggle button').forEach(x => x.classList.toggle('active', x === b)); if (chartItem) setChart(chartItem); });
-$$('#chart-interval-toggle button').forEach(b => b.onclick = () => { chartInterval = b.dataset.interval; $$('#chart-interval-toggle button').forEach(x => x.classList.toggle('active', x === b)); if (chartItem) setChart(chartItem); });
+const chartWithHistory = setChart;
+$$('#chart-range-toggle button').forEach(b => b.onclick = () => { chartRange = b.dataset.range; $$('#chart-range-toggle button').forEach(x => x.classList.toggle('active', x === b)); renderChart(); });
+$$('#chart-interval-toggle button').forEach(b => b.onclick = () => { chartInterval = b.dataset.interval; $$('#chart-interval-toggle button').forEach(x => x.classList.toggle('active', x === b)); renderChart(); });
 $('#chart-expand').onclick = () => {
-  if (!chartItem?.history?.close?.length) return;
-  const modal = $('#chart-modal'), history = researchHistory(chartItem.history);
-  $('#chart-modal-title').textContent = `${chartItem.name} · 주가 차트`;
-  $('#chart-modal-panel').innerHTML = researchCandleChart(history);
-  bindResearchChart($('#chart-modal-panel'), history, chartItem);
+  if (!chartRendered) return;
+  const modal = $('#chart-modal');
+  $('#chart-modal-title').textContent = `${chartRendered.item.name} · 차트`;
+  $('#chart-modal-panel').innerHTML = tvChart(chartRendered.history, chartRendered.item, MODAL_DIMS);
+  bindChart($('#chart-modal-panel'), chartRendered.history, chartRendered.item, MODAL_DIMS);
   modal.showModal();
 };
 $('#chart-modal-close').onclick = () => $('#chart-modal').close();
