@@ -203,15 +203,20 @@ function chartInner(history, item, D) {
     const vy = D.volBottom - ((history.volume[i]||0)/maxVol)*(D.volBottom-D.volTop);
     vols += `<rect class="${st}" x="${x(i)-bw/2}" y="${vy}" width="${bw}" height="${D.volBottom-vy}" fill="currentColor" opacity=".2"/>`;
   });
-  const grid = ticks.map(v => `<line x1="0" x2="${right}" y1="${y(v)}" y2="${y(v)}" class="research-grid"/><text x="${right+7}" y="${y(v)+4}" class="research-axis">${axisNum(v)}</text>`).join('');
+  // Only geometry (lines, candles) goes in the SVG — it is stretched by
+  // preserveAspectRatio="none", which would distort any <text> glyphs. Axis
+  // numbers are HTML spans positioned by % so they align with the grid yet
+  // render in the same crisp Pretendard as every other number on the page.
+  const grid = ticks.map(v => `<line x1="0" x2="${right}" y1="${y(v)}" y2="${y(v)}" class="research-grid"/>`).join('');
+  const yAxis = ticks.map(v => `<span style="top:${(y(v)/D.H*100).toFixed(3)}%">${axisNum(v)}</span>`).join('');
   const spanDays = (parseBarDate(history.dates[n-1]) - parseBarDate(history.dates[0])) / 864e5;
   const timeMode = history.dates[0].includes(' ') && spanDays <= 3;
   const fmtX = label => { const d = parseBarDate(label); return timeMode ? `${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}` : `${d.getUTCMonth()+1}.${d.getUTCDate()}`; };
   const cnt = Math.min(6, n);
-  const xLabels = Array.from({ length: cnt }, (_, k) => { const i = Math.round(k*(n-1)/Math.max(cnt-1,1)); return `<text x="${x(i)}" y="${D.H-4}" class="research-axis" text-anchor="middle">${fmtX(history.dates[i])}</text>`; }).join('');
+  const xAxis = Array.from({ length: cnt }, (_, k) => { const i = Math.round(k*(n-1)/Math.max(cnt-1,1)); const tf = k === 0 ? 'none' : k === cnt-1 ? 'translateX(-100%)' : 'translateX(-50%)'; return `<span style="left:${(x(i)/D.W*100).toFixed(3)}%;transform:${tf}">${fmtX(history.dates[i])}</span>`; }).join('');
   const last = n-1, lastUp = history.close[last] >= history.open[last], lastY = y(history.close[last]);
-  const svg = `<svg viewBox="0 0 ${D.W} ${D.H}" class="axis-chart research-axis-chart" preserveAspectRatio="none" aria-label="캔들 차트">${grid}<line x1="0" x2="${right}" y1="${lastY}" y2="${lastY}" class="last-price ${lastUp?'cs-up':'cs-down'}"/>${candles}<line x1="0" x2="${right}" y1="${D.volBottom}" y2="${D.volBottom}" class="research-volume-line"/>${vols}${xLabels}<line class="hover-crosshair vx" x1="0" x2="0" y1="${D.top}" y2="${D.volBottom}" hidden/><line class="hover-crosshair hx" x1="0" x2="${right}" y1="0" y2="0" hidden/></svg>`;
-  const html = `<div class="tv-legend">${ohlcLegend(history, last, item)}</div><div class="tv-chart">${svg}<div class="tv-tooltip" hidden></div><div class="tv-ylabel" hidden></div><div class="tv-xlabel" hidden></div></div>`;
+  const svg = `<svg viewBox="0 0 ${D.W} ${D.H}" class="axis-chart research-axis-chart" preserveAspectRatio="none" aria-label="캔들 차트">${grid}<line x1="0" x2="${right}" y1="${lastY}" y2="${lastY}" class="last-price ${lastUp?'cs-up':'cs-down'}"/>${candles}<line x1="0" x2="${right}" y1="${D.volBottom}" y2="${D.volBottom}" class="research-volume-line"/>${vols}<line class="hover-crosshair vx" x1="0" x2="0" y1="${D.top}" y2="${D.volBottom}" hidden/><line class="hover-crosshair hx" x1="0" x2="${right}" y1="0" y2="0" hidden/></svg>`;
+  const html = `<div class="tv-legend">${ohlcLegend(history, last, item)}</div><div class="tv-chart">${svg}<div class="tv-axis-y">${yAxis}</div><div class="tv-axis-x">${xAxis}</div><div class="tv-tooltip" hidden></div><div class="tv-ylabel" hidden></div><div class="tv-xlabel" hidden></div></div>`;
   return { html, ctx: { n, D, right, niceMin, range, step, history, item } };
 }
 function paintChart(container, history, item, D, onZoom) {
