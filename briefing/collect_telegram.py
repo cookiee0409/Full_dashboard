@@ -13,8 +13,13 @@ from __future__ import annotations
 import html
 import re
 import urllib.request
+from datetime import datetime, timedelta, timezone
 
 UA = "Mozilla/5.0 (compatible; InterestHubBriefing/1.0; +public preview scraper)"
+# Pull back far enough to fully cover the dashboard's last-24h channel view even
+# for busy channels; t.me/s serves ~20 messages per page via ?before=<id>.
+LOOKBACK = timedelta(hours=26)
+MAX_PAGES = 6
 
 POST_RE = re.compile(r'data-post="([^"]+)"')
 TEXT_RE = re.compile(r'tgme_widget_message_text[^"]*"[^>]*>(.*?)</div>', re.S)
@@ -34,10 +39,39 @@ def is_ad(text: str, exclude_keywords: list[str]) -> bool:
     return any(keyword in text for keyword in exclude_keywords)
 
 
-def fetch_channel_html(username: str) -> str:
-    request = urllib.request.Request("https://t.me/s/" + username, headers={"User-Agent": UA})
+def fetch_channel_html(username: str, before: int | None = None) -> str:
+    url = "https://t.me/s/" + username + (f"?before={before}" if before else "")
+    request = urllib.request.Request(url, headers={"User-Agent": UA})
     with urllib.request.urlopen(request, timeout=10) as response:
         return response.read().decode("utf-8", errors="replace")
+
+
+def fetch_recent_messages(username: str) -> list[dict]:
+    """Page backwards through t.me/s until messages fall outside LOOKBACK (or the
+    page cap), so a channel's full recent-24h window is captured, not just the
+    ~20 newest. Dedupes by id across pages."""
+    cutoff = datetime.now(timezone.utc) - LOOKBACK
+    by_id: dict[int, dict] = {}
+    before = None
+    for _ in range(MAX_PAGES):
+        page = parse_messages(fetch_channel_html(username, before))
+        if not page:
+            break
+        for message in page:
+            by_id[message["id"]] = message
+        oldest = min(page, key=lambda m: m["id"])
+        oldest_ts = _parse_ts(oldest["ts"])
+        if oldest_ts and oldest_ts < cutoff:
+            break            # went back far enough
+        before = oldest["id"]
+    return list(by_id.values())
+
+
+def _parse_ts(ts: str):
+    try:
+        return datetime.fromisoformat(ts)
+    except ValueError:
+        return None
 
 
 def parse_messages(page_html: str) -> list[dict]:
@@ -78,7 +112,7 @@ def collect(channels_config: dict, state: dict):
         category = channel.get("category", "crypto")
 
         try:
-            parsed = parse_messages(fetch_channel_html(username))
+            parsed = fetch_recent_messages(username)
         except Exception as error:
             print(f"[collect] {username} failed: {error}")
             continue

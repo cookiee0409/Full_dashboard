@@ -14,7 +14,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-import collect_prompts
 import collect_telegram
 import extract_keywords
 import extract_memecoins
@@ -93,7 +92,6 @@ def main():
     state = load_json(DATA / "state.json", {})
     history = load_json(DATA / "keyword_history.json", {})
     channels_config = load_json(CONFIG / "channels.json", {"channels": []})
-    prompt_config = load_json(CONFIG / "prompt_sources.json", {"subreddits": [], "title_keywords": []})
     stopwords = load_stopwords()
 
     messages_by_channel, new_state = {}, state
@@ -122,12 +120,6 @@ def main():
     except Exception as error:
         print(f"[briefing] keywords failed: {error}", file=sys.stderr)
         briefing["keywords"] = {"status": "error", "items": []}
-
-    try:
-        briefing["prompt_sources"] = {"status": "ok", **collect_prompts.collect(prompt_config, messages_by_channel)}
-    except Exception as error:
-        print(f"[briefing] prompt_sources failed: {error}", file=sys.stderr)
-        briefing["prompt_sources"] = {"status": "error", "items": []}
 
     DATA.mkdir(exist_ok=True)
     save_json(DATA / "briefing.json", briefing)
