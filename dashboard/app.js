@@ -118,17 +118,24 @@ function lineChartWithAxes(values) {
   return `<svg viewBox="0 0 ${W} ${H}" class="axis-chart ${cls}" preserveAspectRatio="none"><defs><linearGradient id="shade" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".28"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs>${axisGrid(ticks,y,plotRight)}<path fill="url(#shade)" d="M ${points} L ${x(n-1)} ${padT+plotH} L 0 ${padT+plotH} Z"/><polyline fill="none" stroke="currentColor" stroke-width="2" points="${points}"/>${xLabels}</svg>`;
 }
 
-// ===== Unified TradingView-style candlestick chart =====
-// Every asset (stock, index, hyperliquid, coin, DEX memecoin) renders the same
-// chart. Data is fetched per interval from /api/history (1h/4h/1d); 주/월 are
-// aggregated on the client from the 1d series. chartRange/chartInterval are
-// declared above.
+// ===== TradingView-style candlestick chart (independent per-tab instances) =====
+// Data is fetched per interval from /api/history (1h/4h/1d); 주/월 are aggregated
+// from the 1d series. A view window (start,end) over the full series drives the
+// period buttons AND wheel zoom. Crosshair shows a floating OHLCV tooltip plus a
+// precise price label on the Y axis.
 const SERVER_INTERVAL = { '1h': '1h', '4h': '4h', day: '1d', week: '1d', month: '1d' };
 const HL_SYMBOLS = new Set(['HYPE', 'SAMSUNG', 'SKHYNIX', 'LIT']);
-const chartCache = new Map();   // `${key}:${serverInterval}` -> history
-let chartRendered = null;       // last sliced {history,item} for the expand modal
+const RANGE_DAYS = { '1m': 31, '3m': 93, '6m': 186 };
+const CHART_DIMS = { W: 720, H: 300, padR: 66, top: 12, priceH: 196, volTop: 236, volBottom: 280 };
+const MODAL_DIMS = { W: 1120, H: 560, padR: 74, top: 14, priceH: 392, volTop: 462, volBottom: 540 };
 const itemKey = item => String(item.id || item.symbol || item.name);
 const looksCoinId = s => /^[a-z][a-z0-9-]+$/.test(s || '');
+function isCoinLike(item) {
+  if (item.chain && item.address) return true;
+  if (item.symbol === 'HYPE' || item.symbol === 'LIT') return true;
+  if (item.symbol === 'SAMSUNG' || item.symbol === 'SKHYNIX') return false;
+  return looksCoinId(item.id) || looksCoinId(item.symbol);
+}
 function historyQuery(item) {
   if (item.chain && item.address) return `chain=${encodeURIComponent(item.chain)}&address=${encodeURIComponent(item.address)}`;
   if (HL_SYMBOLS.has(item.symbol)) return `hl=${item.symbol}`;
@@ -138,7 +145,6 @@ function historyQuery(item) {
   return '';
 }
 const parseBarDate = label => new Date(label.includes(' ') ? label.replace(' ', 'T') + ':00Z' : label + 'T00:00:00Z');
-
 function aggregateWeekMonth(history, unit) {
   const grouped = new Map(), order = [];
   history.dates.forEach((date, i) => {
@@ -154,46 +160,34 @@ function aggregateWeekMonth(history, unit) {
   const bars = order.map(k => grouped.get(k));
   return { dates: bars.map(b => b.date), open: bars.map(b => b.open), high: bars.map(b => b.high), low: bars.map(b => b.low), close: bars.map(b => b.close), volume: bars.map(b => b.volume) };
 }
-function sliceByRange(history, range) {
-  const n = history.dates.length;
-  if (range === 'all' || !n) return history;
-  const days = { '1m': 31, '3m': 93, '6m': 186 }[range] || 93;
-  const cutoff = parseBarDate(history.dates[n - 1]).getTime() - days * 864e5;
-  let start = 0;
-  for (let i = 0; i < n; i++) { if (parseBarDate(history.dates[i]).getTime() >= cutoff) { start = i; break; } }
-  const s = k => history[k].slice(start);
-  return { dates: s('dates'), open: s('open'), high: s('high'), low: s('low'), close: s('close'), volume: s('volume') };
-}
-async function fetchChartHistory(item) {
-  const si = SERVER_INTERVAL[chartInterval], ck = `${itemKey(item)}:${si}`;
-  if (chartCache.has(ck)) return chartCache.get(ck);
-  const q = historyQuery(item);
-  if (!q) return null;
-  const d = await api(`history?interval=${si}&${q}`);
-  if (d.history?.close?.length) chartCache.set(ck, d.history);
-  return d.history?.close?.length ? d.history : null;
-}
-function processHistory(base) {
-  let h = base;
-  if (chartInterval === 'week') h = aggregateWeekMonth(h, 'week');
-  else if (chartInterval === 'month') h = aggregateWeekMonth(h, 'month');
-  return sliceByRange(h, chartRange);
-}
 function shortVolume(value) {
   if (!value) return '—';
   if (value >= 1e8) return `${(value / 1e8).toFixed(1)}억`;
   if (value >= 1e4) return `${Math.round(value / 1e4)}만`;
   return Math.round(value).toLocaleString('ko-KR');
 }
+function preciseNum(v) {   // Y-axis cursor readout: more decimals than the axis grid
+  const a = Math.abs(v);
+  if (a >= 1000) return v.toLocaleString('ko-KR', { maximumFractionDigits: 2 });
+  if (a >= 1) return v.toFixed(3);
+  if (a === 0) return '0';
+  return v.toFixed(Math.min(10, Math.max(2, 3 - Math.floor(Math.log10(a)))));
+}
+const fmtBarLabel = label => { const d = parseBarDate(label); return label.includes(' ') ? `${d.getUTCMonth()+1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}` : `${d.getUTCFullYear()}.${d.getUTCMonth()+1}.${d.getUTCDate()}`; };
 function ohlcLegend(history, i, item) {
   const o = history.open[i], h = history.high[i], l = history.low[i], c = history.close[i];
   const prev = i ? history.close[i - 1] : o, chg = c - prev, pctv = prev ? chg / prev * 100 : 0, up = chg >= 0;
   const cur = item.currency || 'USD';
   return `<span class="tvl-date">${esc(history.dates[i])}</span><span>시 <b>${money(o,cur)}</b></span><span>고 <b>${money(h,cur)}</b></span><span>저 <b>${money(l,cur)}</b></span><span>종 <b>${money(c,cur)}</b></span><span>거래량 <b>${shortVolume(history.volume[i])}</b></span><span class="${up?'cs-up':'cs-down'}">${up?'+':''}${axisNum(chg)} (${up?'+':''}${pctv.toFixed(2)}%)</span>`;
 }
-function tvChart(history, item, D) {
+function tooltipHtml(history, i, item) {
+  const cur = item.currency || 'USD', o = history.open[i], c = history.close[i];
+  const chg = o ? (c - o) / o * 100 : 0, up = c >= o;
+  return `<strong>${esc(history.dates[i])}</strong><span>시가 <b>${money(o,cur)}</b></span><span>고가 <b>${money(history.high[i],cur)}</b></span><span>저가 <b>${money(history.low[i],cur)}</b></span><span>종가 <b>${money(c,cur)}</b> <em class="${up?'cs-up':'cs-down'}">${up?'+':''}${chg.toFixed(2)}%</em></span><span>거래량 <b>${shortVolume(history.volume[i])}</b></span>`;
+}
+function chartInner(history, item, D) {
   const n = history.close.length;
-  if (!n) return '<p class="empty-note">차트 데이터가 없습니다.</p>';
+  if (!n) return { html: '<p class="empty-note">차트 데이터가 없습니다.</p>', ctx: null };
   const right = D.W - D.padR;
   const highs = history.high.map((v, i) => v ?? history.close[i]), lows = history.low.map((v, i) => v ?? history.close[i]);
   const { ticks, niceMin, niceMax } = niceTicks(Math.min(...lows), Math.max(...highs), 5);
@@ -216,58 +210,105 @@ function tvChart(history, item, D) {
   const cnt = Math.min(6, n);
   const xLabels = Array.from({ length: cnt }, (_, k) => { const i = Math.round(k*(n-1)/Math.max(cnt-1,1)); return `<text x="${x(i)}" y="${D.H-4}" class="research-axis" text-anchor="middle">${fmtX(history.dates[i])}</text>`; }).join('');
   const last = n-1, lastUp = history.close[last] >= history.open[last], lastY = y(history.close[last]);
-  return `<div class="tv-legend">${ohlcLegend(history, last, item)}</div><div class="research-chart"><svg viewBox="0 0 ${D.W} ${D.H}" class="axis-chart research-axis-chart" preserveAspectRatio="none" aria-label="캔들 차트">${grid}<line x1="0" x2="${right}" y1="${lastY}" y2="${lastY}" class="last-price ${lastUp?'cs-up':'cs-down'}"/>${candles}<line x1="0" x2="${right}" y1="${D.volBottom}" y2="${D.volBottom}" class="research-volume-line"/>${vols}${xLabels}<line class="hover-crosshair" x1="0" x2="0" y1="${D.top}" y2="${D.volBottom}" hidden/></svg></div>`;
+  const svg = `<svg viewBox="0 0 ${D.W} ${D.H}" class="axis-chart research-axis-chart" preserveAspectRatio="none" aria-label="캔들 차트">${grid}<line x1="0" x2="${right}" y1="${lastY}" y2="${lastY}" class="last-price ${lastUp?'cs-up':'cs-down'}"/>${candles}<line x1="0" x2="${right}" y1="${D.volBottom}" y2="${D.volBottom}" class="research-volume-line"/>${vols}${xLabels}<line class="hover-crosshair vx" x1="0" x2="0" y1="${D.top}" y2="${D.volBottom}" hidden/><line class="hover-crosshair hx" x1="0" x2="${right}" y1="0" y2="0" hidden/></svg>`;
+  const html = `<div class="tv-legend">${ohlcLegend(history, last, item)}</div><div class="tv-chart">${svg}<div class="tv-tooltip" hidden></div><div class="tv-ylabel" hidden></div><div class="tv-xlabel" hidden></div></div>`;
+  return { html, ctx: { n, D, right, niceMin, range, step, history, item } };
 }
-const CHART_DIMS = { W: 720, H: 300, padR: 62, top: 12, priceH: 196, volTop: 236, volBottom: 280 };
-const MODAL_DIMS = { W: 1040, H: 520, padR: 70, top: 14, priceH: 360, volTop: 430, volBottom: 500 };
-function bindChart(root, history, item, D) {
-  const svg = $('.research-axis-chart', root), legend = $('.tv-legend', root), crosshair = $('.hover-crosshair', root);
-  if (!svg || !crosshair) return;
-  const step = (D.W - D.padR) / history.close.length;
-  svg.addEventListener('mouseleave', () => { crosshair.hidden = true; if (legend) legend.innerHTML = ohlcLegend(history, history.close.length - 1, item); });
+function paintChart(container, history, item, D, onZoom) {
+  const { html, ctx } = chartInner(history, item, D);
+  container.innerHTML = html;
+  if (!ctx) return;
+  const box = $('.tv-chart', container), svg = $('.research-axis-chart', container), legend = $('.tv-legend', container);
+  const tooltip = $('.tv-tooltip', container), ylabel = $('.tv-ylabel', container), xlabel = $('.tv-xlabel', container);
+  const vx = $('.hover-crosshair.vx', container), hx = $('.hover-crosshair.hx', container);
+  const hide = () => { [vx, hx].forEach(l => l.hidden = true); [tooltip, ylabel, xlabel].forEach(e => e.hidden = true); legend.innerHTML = ohlcLegend(ctx.history, ctx.n - 1, item); };
+  svg.addEventListener('mouseleave', hide);
   svg.addEventListener('mousemove', e => {
-    const rect = svg.getBoundingClientRect();
-    const i = Math.max(0, Math.min(history.close.length - 1, Math.floor((e.clientX - rect.left) / rect.width * D.W / step)));
-    const cx = step * i + step / 2;
-    crosshair.setAttribute('x1', cx); crosshair.setAttribute('x2', cx); crosshair.hidden = false;
-    if (legend) legend.innerHTML = ohlcLegend(history, i, item);
+    const rect = svg.getBoundingClientRect(), boxRect = box.getBoundingClientRect();
+    const fracX = (e.clientX - rect.left) / rect.width, fracY = (e.clientY - rect.top) / rect.height;
+    const i = Math.max(0, Math.min(ctx.n - 1, Math.floor(fracX * ctx.n)));
+    const cx = ctx.step * i + ctx.step / 2, svgY = fracY * ctx.D.H;
+    vx.setAttribute('x1', cx); vx.setAttribute('x2', cx); vx.hidden = false;
+    hx.setAttribute('y1', svgY); hx.setAttribute('y2', svgY); hx.hidden = false;
+    legend.innerHTML = ohlcLegend(ctx.history, i, item);
+    tooltip.innerHTML = tooltipHtml(ctx.history, i, item); tooltip.hidden = false;
+    const tx = e.clientX - boxRect.left, ty = e.clientY - boxRect.top;
+    tooltip.style.left = Math.max(4, Math.min(boxRect.width - tooltip.offsetWidth - 8, tx + 16)) + 'px';
+    tooltip.style.top = Math.max(4, Math.min(boxRect.height - tooltip.offsetHeight - 4, ty - 8)) + 'px';
+    if (svgY >= ctx.D.top && svgY <= ctx.D.top + ctx.D.priceH) {
+      const price = ctx.niceMin + (ctx.D.top + ctx.D.priceH - svgY) / ctx.D.priceH * ctx.range;
+      ylabel.textContent = preciseNum(price); ylabel.hidden = false; ylabel.style.top = (fracY * boxRect.height - 9) + 'px';
+    } else ylabel.hidden = true;
+    xlabel.textContent = fmtBarLabel(ctx.history.dates[i]); xlabel.hidden = false;
+    xlabel.style.left = Math.max(2, Math.min(boxRect.width - 76, (cx / ctx.D.W) * boxRect.width - 38)) + 'px';
   });
+  if (onZoom) svg.addEventListener('wheel', e => { e.preventDefault(); const rect = svg.getBoundingClientRect(); onZoom((e.clientX - rect.left) / rect.width, e.deltaY); }, { passive: false });
 }
-async function renderChart() {
-  const item = chartItem;
-  if (!item) return;
-  $('#chart-title').textContent = `${item.name}${item.symbol && item.symbol !== item.name ? ' · ' + item.symbol : ''}`;
-  const panel = $('#chart-panel');
-  let base;
-  try { base = await fetchChartHistory(item); } catch { base = null; }
-  if (chartItem !== item) return;              // superseded by a newer selection
-  if (!base) { panel.innerHTML = '<p class="empty-note">이 자산은 차트 데이터를 표시할 수 없습니다.</p>'; chartRendered = null; return; }
-  const history = processHistory(base);
-  chartRendered = { history, item };
-  panel.innerHTML = tvChart(history, item, CHART_DIMS);
-  bindChart(panel, history, item, CHART_DIMS);
+function createChart(cardEl) {
+  const panel = $('.chart-panel', cardEl), titleEl = $('.chart-title', cardEl);
+  const state = { item: null, interval: 'day', range: '3m', cache: new Map(), full: null, view: null };
+  async function fetchBase() {
+    const si = SERVER_INTERVAL[state.interval], ck = `${itemKey(state.item)}:${si}`;
+    if (state.cache.has(ck)) return state.cache.get(ck);
+    const q = historyQuery(state.item); if (!q) return null;
+    const d = await api(`history?interval=${si}&${q}`);
+    if (d.history?.close?.length) state.cache.set(ck, d.history);
+    return d.history?.close?.length ? d.history : null;
+  }
+  function setViewFromRange() {
+    const n = state.full.close.length;
+    if (state.range === 'all') { state.view = { start: 0, end: n }; return; }
+    const days = RANGE_DAYS[state.range] || 93;
+    const cutoff = parseBarDate(state.full.dates[n - 1]).getTime() - days * 864e5;
+    let start = 0; for (let i = 0; i < n; i++) { if (parseBarDate(state.full.dates[i]).getTime() >= cutoff) { start = i; break; } }
+    if (n - start < 5) start = Math.max(0, n - 5);
+    state.view = { start, end: n };
+  }
+  function sliceView() {
+    const { start, end } = state.view, s = k => state.full[k].slice(start, end);
+    return { dates: s('dates'), open: s('open'), high: s('high'), low: s('low'), close: s('close'), volume: s('volume') };
+  }
+  function onZoom(anchorFrac, deltaY) {
+    const n = state.full.close.length, { start, end } = state.view, width = end - start;
+    const anchor = start + anchorFrac * width, factor = deltaY < 0 ? 0.82 : 1.22;
+    const nw = Math.max(12, Math.min(n, Math.round(width * factor)));
+    const ns = Math.max(0, Math.min(n - nw, Math.round(anchor - anchorFrac * nw)));
+    state.view = { start: ns, end: ns + nw };
+    paintChart(panel, sliceView(), state.item, CHART_DIMS, onZoom);
+  }
+  function draw() { paintChart(panel, sliceView(), state.item, CHART_DIMS, onZoom); }
+  async function rebuild() {
+    let base; try { base = await fetchBase(); } catch { base = null; }
+    if (!base) { panel.innerHTML = '<p class="empty-note">이 자산은 차트 데이터를 표시할 수 없습니다.</p>'; state.full = null; return; }
+    state.full = state.interval === 'week' ? aggregateWeekMonth(base, 'week') : state.interval === 'month' ? aggregateWeekMonth(base, 'month') : base;
+    setViewFromRange(); draw();
+  }
+  let token = 0;
+  async function setChart(item) {
+    if (!item) return;
+    state.item = item;
+    titleEl.textContent = `${item.name}${item.symbol && item.symbol !== item.name ? ' · ' + item.symbol : ''}`;
+    if (item.history?.close?.length > 1) state.cache.set(`${itemKey(item)}:1d`, item.history);
+    panel.innerHTML = '<p class="empty-note">불러오는 중…</p>';
+    const my = ++token; await rebuild(); if (my !== token) return;   // superseded
+  }
+  $$('.chart-range-toggle button', cardEl).forEach(b => b.onclick = () => { state.range = b.dataset.range; $$('.chart-range-toggle button', cardEl).forEach(x => x.classList.toggle('active', x === b)); if (state.full) { setViewFromRange(); draw(); } });
+  $$('.chart-interval-toggle button', cardEl).forEach(b => b.onclick = async () => { state.interval = b.dataset.interval; $$('.chart-interval-toggle button', cardEl).forEach(x => x.classList.toggle('active', x === b)); if (state.item) { const my = ++token; await rebuild(); if (my !== token) return; } });
+  $('.chart-expand', cardEl).onclick = () => {
+    if (!state.full) return;
+    const modal = $('#chart-modal');
+    $('#chart-modal-title').textContent = `${state.item.name} · 차트`;
+    paintChart($('#chart-modal-panel'), sliceView(), state.item, MODAL_DIMS, null);
+    modal.showModal();
+  };
+  return { setChart, hasItem: () => !!state.item };
 }
-function setChart(item) {
-  if (!item) return;
-  chartItem = item;
-  if (item.history?.close?.length > 1) chartCache.set(`${itemKey(item)}:1d`, item.history);  // seed embedded stock daily
-  $('#chart-panel').innerHTML = '<p class="empty-note">불러오는 중…</p>';
-  renderChart();
-}
-const chartWithHistory = setChart;
-$$('#chart-range-toggle button').forEach(b => b.onclick = () => { chartRange = b.dataset.range; $$('#chart-range-toggle button').forEach(x => x.classList.toggle('active', x === b)); renderChart(); });
-$$('#chart-interval-toggle button').forEach(b => b.onclick = () => { chartInterval = b.dataset.interval; $$('#chart-interval-toggle button').forEach(x => x.classList.toggle('active', x === b)); renderChart(); });
-$('#chart-expand').onclick = () => {
-  if (!chartRendered) return;
-  const modal = $('#chart-modal');
-  $('#chart-modal-title').textContent = `${chartRendered.item.name} · 차트`;
-  $('#chart-modal-panel').innerHTML = tvChart(chartRendered.history, chartRendered.item, MODAL_DIMS);
-  bindChart($('#chart-modal-panel'), chartRendered.history, chartRendered.item, MODAL_DIMS);
-  modal.showModal();
-};
+const stockChart = createChart($('.chart-card[data-chart="stocks"]'));
+const coinChart = createChart($('.chart-card[data-chart="coins"]'));
+const routeChart = item => (isCoinLike(item) ? coinChart : stockChart).setChart(item);
 $('#chart-modal-close').onclick = () => $('#chart-modal').close();
-async function loadMarket(isRetry) { try { const d=await api('market'); marketItems=d.items; $('#market-ticker').innerHTML=d.items.map(x => x.error ? `<button type="button" class="ticker-item chart-select"><span class="ticker-name">${esc(x.name)}</span><strong>—</strong></button>` : `<button type="button" class="ticker-item chart-select"><span class="ticker-name">${esc(x.name)}</span>${pct(x.changePct)}<strong>${money(x.price,x.currency)}</strong></button>`).join(''); bindRowClicks('#market-ticker .chart-select', i=>chartWithHistory(marketItems[i])); $('#global-status').textContent='갱신됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}); } catch(e) { fail('#market-ticker',e,isRetry?null:()=>loadMarket(true)); } }
-async function loadStocks(isRetry) { const symbols=activeMarket === 'kr' ? await krWatchlistSymbols() : settings.stocksUS; try { const d=await api('stocks?symbols='+encodeURIComponent(symbols.join(','))); $('#stock-rows').innerHTML=d.items.map(x=>`<button class="stock-row chart-select" data-symbol="${esc(x.symbol)}"><span class="stock-name">${esc(x.name)}<small>${esc(x.symbol)}</small></span><span class="price">${money(x.price,x.currency)}</span><span class="change">${pct(x.changePct)}</span><span class="marketcap">${x.marketCapText || marketCap(x.marketCap,x.currency)}</span></button>`).join(''); $$('.stock-row').forEach((row,i)=>row.onclick=()=>setChart(d.items[i])); if (!chartItem && d.items[0]) setChart(d.items[0]); updateTime('#stocks-updated'); } catch(e) { fail('#stock-rows',e,isRetry?null:()=>loadStocks(true)); } }
+async function loadMarket(isRetry) { try { const d=await api('market'); marketItems=d.items; $('#market-ticker').innerHTML=d.items.map(x => x.error ? `<button type="button" class="ticker-item chart-select"><span class="ticker-name">${esc(x.name)}</span><strong>—</strong></button>` : `<button type="button" class="ticker-item chart-select"><span class="ticker-name">${esc(x.name)}</span>${pct(x.changePct)}<strong>${money(x.price,x.currency)}</strong></button>`).join(''); bindRowClicks('#market-ticker .chart-select', i=>routeChart(marketItems[i])); $('#global-status').textContent='갱신됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}); } catch(e) { fail('#market-ticker',e,isRetry?null:()=>loadMarket(true)); } }
+async function loadStocks(isRetry) { const symbols=activeMarket === 'kr' ? await krWatchlistSymbols() : settings.stocksUS; try { const d=await api('stocks?symbols='+encodeURIComponent(symbols.join(','))); $('#stock-rows').innerHTML=d.items.map(x=>`<button class="stock-row chart-select" data-symbol="${esc(x.symbol)}"><span class="stock-name">${esc(x.name)}<small>${esc(x.symbol)}</small></span><span class="price">${money(x.price,x.currency)}</span><span class="change">${pct(x.changePct)}</span><span class="marketcap">${x.marketCapText || marketCap(x.marketCap,x.currency)}</span></button>`).join(''); $$('.stock-row').forEach((row,i)=>row.onclick=()=>stockChart.setChart(d.items[i])); if (!stockChart.hasItem() && d.items[0]) stockChart.setChart(d.items[0]); updateTime('#stocks-updated'); } catch(e) { fail('#stock-rows',e,isRetry?null:()=>loadStocks(true)); } }
 function mentionRow(x, i) { return `<div class="coin-row chart-select" role="button" tabindex="0" data-index="${i}"><span class="coin-rank">${x.mentions ?? '—'}</span><span class="coin-name"><img src="${esc(x.image)}" alt=""><span>${esc(x.name)}<small>${esc(x.symbol)}</small></span>${gmgnIcon(x.gmgn)}${xSearchIcon(x.x_search)}${teleIcon(x.sample_link)}</span><span class="coin-price">${money(x.price)}</span><span class="change">${pct(x.change24)}</span><span class="marketcap">${marketCap(x.marketCap)}</span></div>`; }
 function renderMeme() {
   if (activeChain === 'mentions') {
@@ -276,7 +317,7 @@ function renderMeme() {
     $('.meme-card').classList.remove('alert');
     $('.meme-table-head span:first-child').textContent = '언급';
     $('#meme-rows').innerHTML = items.length ? items.map(mentionRow).join('') : '<p class="empty-note">아직 수집된 언급 데이터가 없습니다.</p>';
-    bindRowClicks('#meme-rows .chart-select', i => chartWithHistory(items[i]));
+    bindRowClicks('#meme-rows .chart-select', i => coinChart.setChart(items[i]));
     return;
   }
   $('.meme-table-head span:first-child').textContent = '#';
@@ -287,7 +328,7 @@ function renderMeme() {
   $('.meme-card h2').textContent=`밈코인 가격 보드 · ${chainLabel}`;
   const alert=items.some(x=>Math.abs(x.change24)>=15); $('.meme-card').classList.toggle('alert',alert);
   $('#meme-rows').innerHTML=items.map((x,i)=>`<div class="coin-row chart-select" role="button" tabindex="0" data-index="${i}"><span class="coin-rank">${x.rank || i+1}</span><span class="coin-name"><img src="${esc(x.image)}" alt=""><span>${esc(x.name)}<small>${esc(x.symbol)}</small></span>${gmgnIcon(x.gmgn)}</span><span class="coin-price">${money(x.price)}</span><span class="change">${pct(x.change24)}</span><span class="marketcap">${marketCap(x.marketCap)}</span></div>`).join('');
-  bindRowClicks('#meme-rows .chart-select', i=>chartWithHistory(items[i]));
+  bindRowClicks('#meme-rows .chart-select', i=>coinChart.setChart(items[i]));
 }
 async function loadMemeMentions(isRetry) {
   try { mentionsData = await api('meme-mentions'); if (activeChain === 'mentions') renderMeme(); }
@@ -304,7 +345,7 @@ async function loadMeme(isRetry) {
   } catch(e) { fail('#meme-rows',e,isRetry?null:()=>loadMeme(true)); }
   loadMemeMentions();
 }
-function renderRanking() { const items=[...rankingItems].sort((a,b)=>{ const av=a[rankSort.field],bv=b[rankSort.field]; const result=typeof av==='string'?av.localeCompare(bv):((av??0)-(bv??0)); return rankSort.asc?result:-result; }); $('#rank-rows').innerHTML=items.map((x,i)=>`<div class="rank-row chart-select" role="button" tabindex="0"><span class="coin-rank">${x.rank}</span><span class="coin-name"><img src="${esc(x.image)}" alt=""><span>${esc(x.name)}<small>${esc(x.symbol)}</small></span>${xIcon(x.twitter)}</span><span class="coin-price">${money(x.price)}</span><span class="change">${pct(x.change24)}</span><span class="marketcap">${marketCap(x.marketCap)}</span></div>`).join(''); bindRowClicks('#rank-rows .chart-select', i=>chartWithHistory(items[i])); $$('.rank-table-head button').forEach(b=>b.classList.toggle('sorted',b.dataset.sort===rankSort.field)); }
+function renderRanking() { const items=[...rankingItems].sort((a,b)=>{ const av=a[rankSort.field],bv=b[rankSort.field]; const result=typeof av==='string'?av.localeCompare(bv):((av??0)-(bv??0)); return rankSort.asc?result:-result; }); $('#rank-rows').innerHTML=items.map((x,i)=>`<div class="rank-row chart-select" role="button" tabindex="0"><span class="coin-rank">${x.rank}</span><span class="coin-name"><img src="${esc(x.image)}" alt=""><span>${esc(x.name)}<small>${esc(x.symbol)}</small></span>${xIcon(x.twitter)}</span><span class="coin-price">${money(x.price)}</span><span class="change">${pct(x.change24)}</span><span class="marketcap">${marketCap(x.marketCap)}</span></div>`).join(''); bindRowClicks('#rank-rows .chart-select', i=>coinChart.setChart(items[i])); $$('.rank-table-head button').forEach(b=>b.classList.toggle('sorted',b.dataset.sort===rankSort.field)); }
 async function loadRanking(isRetry) { try { const d=await api(`coins?category=${activeCategory}&limit=20`); rankingItems=d.items; renderRanking(); updateTime('#ranking-updated'); } catch(e) { fail('#rank-rows',e,isRetry?null:()=>loadRanking(true)); } }
 function relative(pub) { const h=Math.max(0,Math.round((Date.now()-new Date(pub))/36e5)); return h<1?'방금 전':h<24?`${h}시간 전`:`${Math.round(h/24)}일 전`; }
 const IMPORTANT_NEWS_RE = /(실적|공시|수주|유상증자|자사주|인수합병|급등|급락)/;

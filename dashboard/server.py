@@ -572,7 +572,7 @@ def _finalize(series: dict, intraday: bool) -> dict:
 
 def yahoo_history(symbol: str, interval: str):
     """Yahoo chart for stocks/indices/FX. Intraday uses 60m bars (4h aggregated x4)."""
-    iv, rng = {"1h": ("60m", "3mo"), "4h": ("60m", "1y"), "1d": ("1d", "2y")}[interval]
+    iv, rng = {"1h": ("60m", "6mo"), "4h": ("60m", "1y"), "1d": ("1d", "2y")}[interval]
     url = "https://query1.finance.yahoo.com/v8/finance/chart/" + quote(symbol) + f"?range={rng}&interval={iv}"
     result = fetch_json(url)["chart"]["result"][0]
     timestamps = result.get("timestamp") or []
@@ -593,7 +593,7 @@ def yahoo_history(symbol: str, interval: str):
 
 def hyperliquid_history(label: str, interval: str):
     asset = HYPERLIQUID_ASSETS[label]
-    span_ms = {"1h": 30 * 86400000, "4h": 120 * 86400000, "1d": 365 * 86400000}[interval]
+    span_ms = {"1h": 60 * 86400000, "4h": 240 * 86400000, "1d": 365 * 86400000}[interval]
     end = int(time.time() * 1000)
     rows = fetch_json_post("https://api.hyperliquid.xyz/info",
                             {"type": "candleSnapshot", "req": {"coin": asset["coin"], "interval": interval,
