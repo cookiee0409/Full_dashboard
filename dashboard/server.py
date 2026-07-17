@@ -6,7 +6,7 @@ import re
 import time
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, quote, urlparse
@@ -455,6 +455,91 @@ def load_briefing() -> dict:
         return {}
 
 
+# ---- Live Telegram briefing: scrape public t.me/s pages on demand so the
+# dashboard's refresh button pulls fresh posts (the Actions pipeline only runs
+# 3x/day). The scraper (briefing/collect_telegram.py) is standard-library only,
+# so it is safe to import into this stdlib-only server. ----
+KST = timezone(timedelta(hours=9))
+_COLLECTOR = None
+_BRIEF_TOKEN_RE = re.compile(r"\$[A-Za-z]{2,10}|[A-Z]{2,10}|[가-힣]{2,}")
+_BRIEF_STOP = {"입니다", "있습니다", "하는", "그리고", "합니다", "때문", "정도", "관련",
+               "https", "www", "com", "LIVE", "AI"}
+
+
+def _collector():
+    global _COLLECTOR
+    if _COLLECTOR is None:
+        import importlib.util
+        path = PROJECT_ROOT / "briefing" / "collect_telegram.py"
+        spec = importlib.util.spec_from_file_location("collect_telegram", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _COLLECTOR = module
+    return _COLLECTOR
+
+
+def _cluster_highlights(messages: list[dict], top_n: int = 8) -> list[dict]:
+    """Lightweight, kiwipiepy-free clustering: group messages by their single
+    most globally-frequent shared token, rank clusters by size."""
+    freq, tokens_per = {}, []
+    for message in messages:
+        tokens = {t.upper() for t in _BRIEF_TOKEN_RE.findall(message["text"])
+                  if t.upper() not in _BRIEF_STOP and len(t) >= 2}
+        tokens_per.append(tokens)
+        for token in tokens:
+            freq[token] = freq.get(token, 0) + 1
+    clusters: dict[str, list[dict]] = {}
+    for message, tokens in zip(messages, tokens_per):
+        if not tokens:
+            continue
+        clusters.setdefault(max(tokens, key=lambda t: freq[t]), []).append(message)
+    highlights = []
+    for cluster in sorted(clusters.values(), key=len, reverse=True)[:top_n]:
+        rep = cluster[0]
+        sentence = re.split(r"(?<=[.!?\n])\s+", rep["text"].strip())[0][:140]
+        highlights.append({"text": sentence, "channel": rep["channel"], "link": rep["link"],
+                           "ts": rep["ts"], "cluster_size": len(cluster)})
+    return highlights
+
+
+def live_briefing():
+    collector = _collector()
+    channels = load_channels_config().get("channels", [])
+
+    def scrape(channel):
+        try:
+            messages = collector.fetch_recent_messages(channel["username"], max_pages=1)
+        except Exception:
+            return channel, []
+        excludes = channel.get("exclude_keywords", [])
+        good = [m for m in messages if not collector.is_ad(m["text"], excludes)]
+        good.sort(key=lambda m: m["ts"])
+        return channel, good
+
+    with ThreadPoolExecutor(max_workers=max(len(channels), 1)) as executor:
+        results = list(executor.map(scrape, channels))
+
+    raw_by_channel, all_messages = {}, []
+    for channel, messages in results:
+        if not messages:
+            continue
+        label = channel.get("label", channel["username"])
+        raw_by_channel[label] = [{"text": m["text"], "link": m["link"], "ts": m["ts"]} for m in messages]
+        all_messages.extend({**m, "channel": label} for m in messages)
+
+    return {"generated_at": datetime.now(KST).isoformat(),
+            "crypto_brief": {"status": "ok" if raw_by_channel else "error",
+                             "highlights": _cluster_highlights(all_messages),
+                             "raw_by_channel": raw_by_channel}}
+
+
+def load_channels_config() -> dict:
+    try:
+        return json.loads((PROJECT_ROOT / "briefing" / "config" / "channels.json").read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {"channels": []}
+
+
 # DEX Screener's chainId strings differ from this file's CoinGecko-style chain
 # ids (used by GMGN_CHAIN_SLUG); map them so gmgn_link() keeps working.
 DEXSCREENER_CHAIN_MAP = {"solana": "solana", "base": "base", "bsc": "binance-smart-chain",
@@ -792,6 +877,7 @@ class Handler(SimpleHTTPRequestHandler):
             elif parsed.path == "/api/fear-greed": data, ttl = cached("fear", 3600, fear_greed), 3600
             elif parsed.path == "/api/meme-chains": data, ttl = meme_chains(), 300
             elif parsed.path == "/api/meme-mentions": data, ttl = cached("meme-mentions", 60, meme_mentions), 60
+            elif parsed.path == "/api/briefing": data, ttl = cached("briefing-live", 90, live_briefing), 90
             elif parsed.path == "/api/kr-top10": data, ttl = cached("kr-top10", 300, kr_top10), 300
             elif parsed.path == "/api/stocks":
                 symbols = [x.upper() for x in params.get("symbols", [""])[0].split(",") if x][:12]

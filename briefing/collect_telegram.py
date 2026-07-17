@@ -46,14 +46,14 @@ def fetch_channel_html(username: str, before: int | None = None) -> str:
         return response.read().decode("utf-8", errors="replace")
 
 
-def fetch_recent_messages(username: str) -> list[dict]:
+def fetch_recent_messages(username: str, max_pages: int = MAX_PAGES) -> list[dict]:
     """Page backwards through t.me/s until messages fall outside LOOKBACK (or the
     page cap), so a channel's full recent-24h window is captured, not just the
     ~20 newest. Dedupes by id across pages."""
     cutoff = datetime.now(timezone.utc) - LOOKBACK
     by_id: dict[int, dict] = {}
     before = None
-    for _ in range(MAX_PAGES):
+    for _ in range(max_pages):
         page = parse_messages(fetch_channel_html(username, before))
         if not page:
             break
