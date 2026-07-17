@@ -338,7 +338,7 @@ function renderAirdrops() {
     renderAirdrops();
   });
 }
-async function loadAirdrops(isRetry) { try { const d = await (await fetch('/data/airdrops.json')).json(); airdropTasks = d.tasks || []; renderAirdrops(); updateTime('#airdrop-updated'); } catch(e) { fail('#airdrop-list', e, isRetry ? null : () => loadAirdrops(true)); } }
+async function loadAirdrops(isRetry) { try { const d = await (await fetch('/data/airdrops.json?t=' + Date.now())).json(); airdropTasks = d.tasks || []; renderAirdrops(); updateTime('#airdrop-updated'); } catch(e) { fail('#airdrop-list', e, isRetry ? null : () => loadAirdrops(true)); } }
 
 let briefingData = null, briefSort = 'hot';
 function showTgView(link) {
@@ -348,31 +348,42 @@ function showTgView(link) {
 }
 const briefRow = h => `<div class="news-row brief-row" role="button" tabindex="0" data-link="${esc(h.link)}"><div class="news-title">${esc(h.text)}</div><div class="news-meta"><span>${esc(h.channel || '')}</span><span>·</span><span>${relative(h.ts)}</span>${h.cluster_size > 1 ? `<span class="brief-cluster">${h.cluster_size}건 언급</span>` : ''}<a class="link-icon" href="${esc(h.link)}" target="_blank" rel="noopener" title="t.me에서 열기" onclick="event.stopPropagation()">↗</a></div></div>`;
 function bindBriefRows(root) { $$('.brief-row', root).forEach(row => { const open = () => showTgView(row.dataset.link); row.onclick = open; row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }; }); }
+// 채널별 mode: left card lists channels; picking one fills the center card with
+// that channel's last-24h posts (right card embeds a clicked post).
+function showChannelPosts(channel) {
+  const msgs = (briefingData?.crypto_brief?.raw_by_channel || {})[channel] || [];
+  const cutoff = Date.now() - 24 * 36e5;
+  const recent = msgs.filter(m => new Date(m.ts).getTime() >= cutoff).sort((a, b) => new Date(b.ts) - new Date(a.ts));
+  $('#channel-title').textContent = channel;
+  $('#channel-updated').textContent = `${recent.length}건 · 24h`;
+  $('#channel-list').innerHTML = recent.length ? recent.map(m => briefRow({ ...m, channel })).join('') : '<p class="empty-note">최근 24시간 글이 없습니다.</p>';
+  bindBriefRows($('#channel-list'));
+}
 function renderBriefing() {
   const brief = briefingData?.crypto_brief || {};
+  if (briefSort === 'channels') {
+    const channels = Object.keys(brief.raw_by_channel || {});
+    $('#brief-list').innerHTML = channels.length ? channels.map(ch => {
+      const count = (brief.raw_by_channel[ch] || []).filter(m => new Date(m.ts).getTime() >= Date.now() - 24 * 36e5).length;
+      return `<button type="button" class="channel-pick" data-channel="${esc(ch)}"><span>${esc(ch)}</span><span class="channel-count">${count}</span></button>`;
+    }).join('') : '<p class="empty-note">수집된 채널이 없습니다.</p>';
+    $$('#brief-list .channel-pick').forEach(b => b.onclick = () => { $$('#brief-list .channel-pick').forEach(x => x.classList.toggle('active', x === b)); showChannelPosts(b.dataset.channel); });
+    return;
+  }
   const highlights = [...(brief.highlights || [])].sort((a, b) => briefSort === 'hot'
     ? (b.cluster_size || 0) - (a.cluster_size || 0) || new Date(b.ts) - new Date(a.ts)
     : new Date(b.ts) - new Date(a.ts)).slice(0, 8);
   $('#brief-list').innerHTML = highlights.length ? highlights.map(briefRow).join('') : '<p class="empty-note">아직 수집된 브리핑이 없습니다.</p>';
   bindBriefRows($('#brief-list'));
 }
-function renderBriefRaw() {
-  const byChannel = briefingData?.crypto_brief?.raw_by_channel || {};
-  const channels = Object.keys(byChannel);
-  $('#brief-raw').innerHTML = channels.length ? channels.map(ch => `<div class="brief-channel"><h4>${esc(ch)}</h4>${byChannel[ch].map(m => briefRow({ ...m, channel: ch })).join('')}</div>`).join('') : '<p class="empty-note">채널별 원문이 없습니다.</p>';
-  bindBriefRows($('#brief-raw'));
-}
 async function loadBriefing(isRetry) {
   try {
-    briefingData = await (await fetch('/data/briefing.json')).json();
+    briefingData = await (await fetch('/data/briefing.json?t=' + Date.now())).json();
     renderBriefing();
-    if (!$('#brief-raw').hidden) renderBriefRaw();
-    $('#brief-toggle-raw').hidden = Object.keys(briefingData.crypto_brief?.raw_by_channel || {}).length === 0;
     $('#brief-updated').textContent = briefingData.generated_at ? relative(briefingData.generated_at) : '—';
   } catch(e) { fail('#brief-list', e, isRetry ? null : () => loadBriefing(true)); }
 }
 $$('#brief-sort-tabs button').forEach(b => b.onclick = () => { briefSort = b.dataset.sort; $$('#brief-sort-tabs button').forEach(x => x.classList.toggle('active', x === b)); renderBriefing(); });
-$('#brief-toggle-raw').onclick = () => { const raw = $('#brief-raw'), willShow = raw.hidden; if (willShow) renderBriefRaw(); raw.hidden = !willShow; $('#brief-toggle-raw').textContent = willShow ? '채널별 전체 보기 접기' : '채널별 전체 보기'; };
 
 let promptItems = [];
 function renderPrompts() {
@@ -389,4 +400,15 @@ $$('.stock-tab').forEach(b=>b.onclick=()=>{activeMarket=b.dataset.market;$$('.st
 $('#refresh-all').onclick=loadAll; $$('.refresh').forEach(b=>b.onclick=()=>({stocks:loadStocks,meme:loadMeme,ranking:loadRanking,'stocks-news':()=>loadNews('stocks','#stocks-news','#stocks-news-updated'),'crypto-news':()=>{loadNews('crypto','#crypto-news','#crypto-news-updated');loadFear()},'world-news':()=>loadNews('world','#world-news','#world-news-updated'),airdrops:loadAirdrops,brief:loadBriefing,prompts:loadPrompts}[b.dataset.target]()));
 const dialog=$('#settings'); $('#open-settings').onclick=()=>{ $('#theme').value=settings.theme;$('#color-mode').value=settings.colorMode;$('#stocks-kr').value=settings.stocksKR.join(', ');$('#stocks-us').value=settings.stocksUS.join(', ');$('#stock-search').value='';$('#stock-search-results').innerHTML='';dialog.showModal();};$('#add-stock').onclick=()=>$('#open-settings').click(); $$('dialog [value="cancel"]').forEach(b=>b.onclick=()=>dialog.close()); $('#save-settings').onclick=()=>{settings.theme=$('#theme').value;settings.colorMode=$('#color-mode').value;settings.stocksKR=$('#stocks-kr').value.split(',').map(x=>x.trim()).filter(Boolean);settings.stocksUS=$('#stocks-us').value.split(',').map(x=>x.trim()).filter(Boolean);localStorage.setItem('hub.settings.v1',JSON.stringify(settings));applySettings();loadStocks();};
 let searchTimer; $('#stock-search').oninput=e=>{clearTimeout(searchTimer);const q=e.target.value.trim();if(q.length<2){$('#stock-search-results').innerHTML='';return;}searchTimer=setTimeout(async()=>{try{const d=await api('search-stocks?q='+encodeURIComponent(q));$('#stock-search-results').innerHTML=d.items.map(x=>`<button type="button" data-symbol="${x.symbol}" data-exchange="${x.exchange}"><b>${x.name}</b><span>${x.symbol} · ${x.exchange}</span></button>`).join('')||'<p>검색 결과가 없습니다.</p>';$$('#stock-search-results button').forEach(b=>b.onclick=()=>{const domestic=/Korea|KOSDAQ|Korea Stock/i.test(b.dataset.exchange)||/\.(KS|KQ)$/i.test(b.dataset.symbol);const field=$(domestic?'#stocks-kr':'#stocks-us');const symbols=field.value.split(',').map(x=>x.trim()).filter(Boolean);if(!symbols.includes(b.dataset.symbol))symbols.push(b.dataset.symbol);field.value=symbols.join(', ');$('#stock-search').value='';$('#stock-search-results').innerHTML='';});}catch{ $('#stock-search-results').innerHTML='<p>검색에 실패했습니다.</p>'; }},250);};
+function setTab(tab) {
+  localStorage.setItem('hub.tab.v1', tab);
+  $$('#main-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  $$('.dashboard-grid .card').forEach(card => {
+    const tabs = (card.dataset.tabs || '').split(' ');
+    card.hidden = tab !== 'dashboard' && !tabs.includes(tab);
+  });
+  document.body.dataset.tab = tab;
+}
+$$('#main-tabs button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+setTab(localStorage.getItem('hub.tab.v1') || 'dashboard');
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadAll()});applySettings();loadAll();setInterval(()=>{if(!document.hidden){loadMarket();loadMeme();loadStocks()}},60000);setInterval(()=>{if(!document.hidden){loadRanking();loadNews('stocks','#stocks-news','#stocks-news-updated');loadNews('world','#world-news','#world-news-updated');loadNews('crypto','#crypto-news','#crypto-news-updated')}},300000);

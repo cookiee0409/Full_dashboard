@@ -64,8 +64,10 @@ def parse_messages(page_html: str) -> list[dict]:
 
 
 def collect(channels_config: dict, state: dict):
-    """Returns (messages_by_channel, new_state). Incremental via state's last_id,
-    so each run only surfaces messages newer than the previous run."""
+    """Returns (messages_by_channel, new_state). Each channel yields ALL of its
+    currently-public messages (t.me/s shows ~the last 20), so the dashboard's
+    채널별 view can show a real recent-24h list and highlights reflect the current
+    snapshot rather than an incremental diff. state keeps the max id seen."""
     messages_by_channel: dict[str, list[dict]] = {}
     new_state = dict(state)
 
@@ -74,7 +76,6 @@ def collect(channels_config: dict, state: dict):
         label = channel.get("label", username)
         exclude_keywords = channel.get("exclude_keywords", [])
         category = channel.get("category", "crypto")
-        last_id = (state.get(username) or {}).get("last_id", 0)
 
         try:
             parsed = parse_messages(fetch_channel_html(username))
@@ -82,10 +83,10 @@ def collect(channels_config: dict, state: dict):
             print(f"[collect] {username} failed: {error}")
             continue
 
-        collected, max_id_seen = [], last_id
+        collected, max_id_seen = [], (state.get(username) or {}).get("last_id", 0)
         for message in sorted(parsed, key=lambda m: m["id"]):
             max_id_seen = max(max_id_seen, message["id"])
-            if message["id"] <= last_id or is_ad(message["text"], exclude_keywords):
+            if is_ad(message["text"], exclude_keywords):
                 continue
             collected.append({**message, "category": category})
         if collected:
