@@ -52,6 +52,11 @@ def load_stopwords() -> set[str]:
         return set()
 
 
+def _public_message(message: dict) -> dict:
+    """Keep only the fields the dashboard needs from a collected message."""
+    return {key: message[key] for key in ("text", "link", "ts", "channel")}
+
+
 def cluster_highlights(messages_by_channel: dict, stopwords: set[str], top_n: int = 8) -> dict:
     """Group messages by their single most globally-frequent shared token, then
     rank clusters by size. A deliberately simple v1 (기획서 §8-1: 규칙 기반 (a))."""
@@ -68,13 +73,15 @@ def cluster_highlights(messages_by_channel: dict, stopwords: set[str], top_n: in
     for message, tokens in zip(all_messages, message_tokens):
         if not tokens:
             continue
-        top_token = max(tokens, key=lambda t: token_counts[t])
+        top_token = max(tokens, key=lambda t: (token_counts[t], t))
         clusters.setdefault(top_token, []).append(message)
 
-    ranked = sorted(clusters.values(), key=len, reverse=True)[:top_n]
+    ranked = sorted(clusters.values(),
+                    key=lambda cluster: (len(cluster), max(message["ts"] for message in cluster)),
+                    reverse=True)[:top_n]
     highlights = []
     for cluster in ranked:
-        representative = cluster[0]
+        representative = max(cluster, key=lambda message: message["ts"])
         first_sentence = re.split(r"(?<=[.!?\n])\s+", representative["text"].strip())[0][:140]
         highlights.append({"text": first_sentence, "channel": representative["channel"],
                            "link": representative["link"], "ts": representative["ts"],
@@ -82,10 +89,13 @@ def cluster_highlights(messages_by_channel: dict, stopwords: set[str], top_n: in
 
     if PUBLIC_SAFE:
         raw_by_channel = {}
+        latest = []
     else:
         raw_by_channel = {channel: [{"text": m["text"], "link": m["link"], "ts": m["ts"]} for m in msgs]
                           for channel, msgs in messages_by_channel.items()}
-    return {"highlights": highlights, "raw_by_channel": raw_by_channel}
+        latest = [_public_message(message) for message in
+                  sorted(all_messages, key=lambda message: message["ts"], reverse=True)[:50]]
+    return {"highlights": highlights, "latest": latest, "raw_by_channel": raw_by_channel}
 
 
 def main():

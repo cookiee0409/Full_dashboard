@@ -478,6 +478,16 @@ def _collector():
     return _COLLECTOR
 
 
+def _briefing_message(message: dict) -> dict:
+    return {key: message[key] for key in ("text", "link", "ts", "channel")}
+
+
+def _latest_briefing_messages(messages: list[dict], limit: int = 50) -> list[dict]:
+    """Return newest posts independently from popularity/topic clustering."""
+    return [_briefing_message(message) for message in
+            sorted(messages, key=lambda message: message["ts"], reverse=True)[:limit]]
+
+
 def _cluster_highlights(messages: list[dict], top_n: int = 8) -> list[dict]:
     """Lightweight, kiwipiepy-free clustering: group messages by their single
     most globally-frequent shared token, rank clusters by size."""
@@ -492,10 +502,12 @@ def _cluster_highlights(messages: list[dict], top_n: int = 8) -> list[dict]:
     for message, tokens in zip(messages, tokens_per):
         if not tokens:
             continue
-        clusters.setdefault(max(tokens, key=lambda t: freq[t]), []).append(message)
+        clusters.setdefault(max(tokens, key=lambda t: (freq[t], t)), []).append(message)
     highlights = []
-    for cluster in sorted(clusters.values(), key=len, reverse=True)[:top_n]:
-        rep = cluster[0]
+    for cluster in sorted(clusters.values(),
+                          key=lambda cluster: (len(cluster), max(message["ts"] for message in cluster)),
+                          reverse=True)[:top_n]:
+        rep = max(cluster, key=lambda message: message["ts"])
         sentence = re.split(r"(?<=[.!?\n])\s+", rep["text"].strip())[0][:140]
         highlights.append({"text": sentence, "channel": rep["channel"], "link": rep["link"],
                            "ts": rep["ts"], "cluster_size": len(cluster)})
@@ -509,28 +521,37 @@ def live_briefing():
     def scrape(channel):
         try:
             messages = collector.fetch_recent_messages(channel["username"], max_pages=1)
-        except Exception:
-            return channel, []
+        except Exception as error:
+            return channel, [], f"{type(error).__name__}: {error}"[:160]
         excludes = channel.get("exclude_keywords", [])
         good = [m for m in messages if not collector.is_ad(m["text"], excludes)]
         good.sort(key=lambda m: m["ts"])
-        return channel, good
+        return channel, good, None
 
-    with ThreadPoolExecutor(max_workers=max(len(channels), 1)) as executor:
+    # A bounded pool avoids a burst of simultaneous requests to t.me while still
+    # completing comfortably within the serverless request budget.
+    with ThreadPoolExecutor(max_workers=min(8, max(len(channels), 1))) as executor:
         results = list(executor.map(scrape, channels))
 
-    raw_by_channel, all_messages = {}, []
-    for channel, messages in results:
+    raw_by_channel, all_messages, failed_channels = {}, [], []
+    for channel, messages, error in results:
+        label = channel.get("label", channel["username"])
+        if error:
+            failed_channels.append({"channel": label, "error": error})
+            continue
         if not messages:
             continue
-        label = channel.get("label", channel["username"])
         raw_by_channel[label] = [{"text": m["text"], "link": m["link"], "ts": m["ts"]} for m in messages]
         all_messages.extend({**m, "channel": label} for m in messages)
 
+    status = "error" if not raw_by_channel else "partial" if failed_channels else "ok"
     return {"generated_at": datetime.now(KST).isoformat(),
-            "crypto_brief": {"status": "ok" if raw_by_channel else "error",
+            "crypto_brief": {"status": status,
                              "highlights": _cluster_highlights(all_messages),
-                             "raw_by_channel": raw_by_channel}}
+                             "latest": _latest_briefing_messages(all_messages),
+                             "raw_by_channel": raw_by_channel,
+                             "failed_channels": failed_channels,
+                             "latest_source_ts": max((message["ts"] for message in all_messages), default=None)}}
 
 
 def load_channels_config() -> dict:
@@ -877,7 +898,13 @@ class Handler(SimpleHTTPRequestHandler):
             elif parsed.path == "/api/fear-greed": data, ttl = cached("fear", 3600, fear_greed), 3600
             elif parsed.path == "/api/meme-chains": data, ttl = meme_chains(), 300
             elif parsed.path == "/api/meme-mentions": data, ttl = cached("meme-mentions", 60, meme_mentions), 60
-            elif parsed.path == "/api/briefing": data, ttl = cached("briefing-live", 90, live_briefing), 90
+            elif parsed.path == "/api/briefing":
+                # A user-triggered refresh requests fresh=1 and must not receive
+                # a CDN stale-while-revalidate response. Non-forced reads retain
+                # a tiny in-process coalescing window to protect t.me.
+                fresh = params.get("fresh", ["0"])[0] == "1"
+                data = live_briefing() if fresh else cached("briefing-live", 20, live_briefing)
+                ttl = 0
             elif parsed.path == "/api/kr-top10": data, ttl = cached("kr-top10", 300, kr_top10), 300
             elif parsed.path == "/api/stocks":
                 symbols = [x.upper() for x in params.get("symbols", [""])[0].split(",") if x][:12]

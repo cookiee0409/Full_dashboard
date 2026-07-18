@@ -431,6 +431,13 @@ function showChannelPosts(channel) {
   $('#channel-list').innerHTML = msgs.length ? msgs.map(m => briefRow({ ...m, channel })).join('') : '<p class="empty-note">최근 글이 없습니다.</p>';
   bindBriefRows($('#channel-list'));
 }
+function latestBriefPosts(brief) {
+  if (Array.isArray(brief.latest) && brief.latest.length) return brief.latest;
+  // Keep the latest tab usable while older scheduled briefing snapshots are
+  // still present in the CDN or repository.
+  return Object.entries(brief.raw_by_channel || {}).flatMap(([channel, messages]) =>
+    messages.map(message => ({ ...message, channel })));
+}
 function renderBriefing() {
   const brief = briefingData?.crypto_brief || {};
   if (briefSort === 'channels') {
@@ -447,10 +454,11 @@ function renderBriefing() {
     }
     return;
   }
-  const highlights = [...(brief.highlights || [])].sort((a, b) => briefSort === 'hot'
-    ? (b.cluster_size || 0) - (a.cluster_size || 0) || new Date(b.ts) - new Date(a.ts)
-    : new Date(b.ts) - new Date(a.ts)).slice(0, 8);
-  $('#brief-list').innerHTML = highlights.length ? highlights.map(briefRow).join('') : '<p class="empty-note">아직 수집된 브리핑이 없습니다.</p>';
+  const posts = briefSort === 'new'
+    ? [...latestBriefPosts(brief)].sort((a, b) => new Date(b.ts) - new Date(a.ts)).slice(0, 50)
+    : [...(brief.highlights || [])].sort((a, b) =>
+      (b.cluster_size || 0) - (a.cluster_size || 0) || new Date(b.ts) - new Date(a.ts)).slice(0, 8);
+  $('#brief-list').innerHTML = posts.length ? posts.map(briefRow).join('') : '<p class="empty-note">아직 수집된 브리핑이 없습니다.</p>';
   bindBriefRows($('#brief-list'));
 }
 // Page load reads the static snapshot (instant); the refresh button hits
@@ -459,16 +467,23 @@ function renderBriefing() {
 async function loadBriefing(live) {
   if (live) $('#brief-list').innerHTML = '<p class="loading">실시간으로 불러오는 중… (몇 초 걸립니다)</p>';
   try {
-    briefingData = live ? await api('briefing') : await (await fetch('/data/briefing.json?t=' + Date.now())).json();
+    briefingData = live ? await api('briefing?fresh=1') : await (await fetch('/data/briefing.json?t=' + Date.now())).json();
     renderBriefing();
-    $('#brief-updated').textContent = briefingData.generated_at ? relative(briefingData.generated_at) : '—';
+    const failures = briefingData?.crypto_brief?.failed_channels || [];
+    const updated = briefingData.generated_at ? relative(briefingData.generated_at) : '—';
+    $('#brief-updated').textContent = failures.length ? `${updated} · ${failures.length}개 채널 실패` : updated;
   } catch(e) { fail('#brief-list', e, live ? null : () => loadBriefing(false)); }
 }
-$$('#brief-sort-tabs button').forEach(b => b.onclick = () => { briefSort = b.dataset.sort; $$('#brief-sort-tabs button').forEach(x => x.classList.toggle('active', x === b)); renderBriefing(); });
+$$('#brief-sort-tabs button').forEach(b => b.onclick = () => {
+  briefSort = b.dataset.sort;
+  $$('#brief-sort-tabs button').forEach(x => x.classList.toggle('active', x === b));
+  if (briefSort === 'new') loadBriefing(true);
+  else renderBriefing();
+});
 
-function loadAll() { loadMarket();loadStocks();loadMeme();loadRanking();loadNews('stocks','#stocks-news','#stocks-news-updated');loadNews('world','#world-news','#world-news-updated');loadNews('crypto','#crypto-news','#crypto-news-updated');loadFear();loadAirdrops();loadBriefing(); }
+function loadAll(liveBriefing = false) { loadMarket();loadStocks();loadMeme();loadRanking();loadNews('stocks','#stocks-news','#stocks-news-updated');loadNews('world','#world-news','#world-news-updated');loadNews('crypto','#crypto-news','#crypto-news-updated');loadFear();loadAirdrops();loadBriefing(liveBriefing); }
 $$('.stock-tab').forEach(b=>b.onclick=()=>{activeMarket=b.dataset.market;$$('.stock-tab').forEach(x=>x.classList.toggle('active',x===b));loadStocks()});$$('.category-tabs button').forEach(b=>b.onclick=()=>{activeCategory=b.dataset.category;$$('.category-tabs button').forEach(x=>x.classList.toggle('active',x===b));loadRanking()});$$('.rank-table-head button').forEach(b=>b.onclick=()=>{rankSort.asc=rankSort.field===b.dataset.sort?!rankSort.asc:false;rankSort.field=b.dataset.sort;renderRanking()});
-$('#refresh-all').onclick=loadAll; $$('.refresh').forEach(b=>b.onclick=()=>({stocks:loadStocks,meme:loadMeme,ranking:loadRanking,'stocks-news':()=>loadNews('stocks','#stocks-news','#stocks-news-updated'),'crypto-news':()=>{loadNews('crypto','#crypto-news','#crypto-news-updated');loadFear()},'world-news':()=>loadNews('world','#world-news','#world-news-updated'),airdrops:loadAirdrops,brief:()=>loadBriefing(true)}[b.dataset.target]()));
+$('#refresh-all').onclick=()=>loadAll(true); $$('.refresh').forEach(b=>b.onclick=()=>({stocks:loadStocks,meme:loadMeme,ranking:loadRanking,'stocks-news':()=>loadNews('stocks','#stocks-news','#stocks-news-updated'),'crypto-news':()=>{loadNews('crypto','#crypto-news','#crypto-news-updated');loadFear()},'world-news':()=>loadNews('world','#world-news','#world-news-updated'),airdrops:loadAirdrops,brief:()=>loadBriefing(true)}[b.dataset.target]()));
 const dialog=$('#settings'); $('#open-settings').onclick=()=>{ $('#theme').value=settings.theme;$('#color-mode').value=settings.colorMode;$('#stocks-kr').value=settings.stocksKR.join(', ');$('#stocks-us').value=settings.stocksUS.join(', ');$('#stock-search').value='';$('#stock-search-results').innerHTML='';dialog.showModal();};$('#add-stock').onclick=()=>$('#open-settings').click(); $$('dialog [value="cancel"]').forEach(b=>b.onclick=()=>dialog.close()); $('#save-settings').onclick=()=>{settings.theme=$('#theme').value;settings.colorMode=$('#color-mode').value;settings.stocksKR=$('#stocks-kr').value.split(',').map(x=>x.trim()).filter(Boolean);settings.stocksUS=$('#stocks-us').value.split(',').map(x=>x.trim()).filter(Boolean);localStorage.setItem('hub.settings.v1',JSON.stringify(settings));applySettings();loadStocks();};
 let searchTimer; $('#stock-search').oninput=e=>{clearTimeout(searchTimer);const q=e.target.value.trim();if(q.length<2){$('#stock-search-results').innerHTML='';return;}searchTimer=setTimeout(async()=>{try{const d=await api('search-stocks?q='+encodeURIComponent(q));$('#stock-search-results').innerHTML=d.items.map(x=>`<button type="button" data-symbol="${x.symbol}" data-exchange="${x.exchange}"><b>${x.name}</b><span>${x.symbol} · ${x.exchange}</span></button>`).join('')||'<p>검색 결과가 없습니다.</p>';$$('#stock-search-results button').forEach(b=>b.onclick=()=>{const domestic=/Korea|KOSDAQ|Korea Stock/i.test(b.dataset.exchange)||/\.(KS|KQ)$/i.test(b.dataset.symbol);const field=$(domestic?'#stocks-kr':'#stocks-us');const symbols=field.value.split(',').map(x=>x.trim()).filter(Boolean);if(!symbols.includes(b.dataset.symbol))symbols.push(b.dataset.symbol);field.value=symbols.join(', ');$('#stock-search').value='';$('#stock-search-results').innerHTML='';});}catch{ $('#stock-search-results').innerHTML='<p>검색에 실패했습니다.</p>'; }},250);};
 // Tabs are addressable via location.hash (#dashboard, #stocks, ...) so each has
