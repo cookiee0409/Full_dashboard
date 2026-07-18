@@ -1,3 +1,5 @@
 __pycache__/
 *.pyc
 scripts/_twitter_map_ids_cache.json
+# 로컬 참고용 메모 — 채널 설정 자체는 briefing/config/channels.json에 있습니다.
+briefing/텔레그램 채널 목록.txt
