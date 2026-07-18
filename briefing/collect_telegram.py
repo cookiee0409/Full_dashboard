@@ -5,8 +5,8 @@ library only -- no API_ID/HASH, no login, no session string. Works for public
 channels (those viewable at t.me/s/...). Private/invite-only channels are not
 reachable this way; those would require an authenticated user session instead.
 
-Runs in GitHub Actions (.github/workflows/briefing.yml) and is never imported
-by dashboard/server.py.
+Runs in GitHub Actions (.github/workflows/briefing.yml) and is also loaded by
+dashboard/server.py for the dashboard's on-demand public-channel refresh.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 
 UA = "Mozilla/5.0 (compatible; InterestHubBriefing/1.0; +public preview scraper)"
-# Pull back far enough to fully cover the dashboard's last-24h channel view even
+# Pull back far enough to fully cover the dashboard's recent channel view even
 # for busy channels; t.me/s serves ~20 messages per page via ?before=<id>.
 LOOKBACK = timedelta(hours=26)
 MAX_PAGES = 6
@@ -47,9 +47,12 @@ def fetch_channel_html(username: str, before: int | None = None) -> str:
 
 
 def fetch_recent_messages(username: str, max_pages: int = MAX_PAGES) -> list[dict]:
-    """Page backwards through t.me/s until messages fall outside LOOKBACK (or the
-    page cap), so a channel's full recent-24h window is captured, not just the
-    ~20 newest. Dedupes by id across pages."""
+    """Return the deduplicated messages from the last LOOKBACK window.
+
+    Pages are fetched backwards until their oldest message is outside the
+    window.  The final page can straddle the cutoff, so filter every collected
+    message before returning; otherwise old posts leak into the "recent" view.
+    """
     cutoff = datetime.now(timezone.utc) - LOOKBACK
     by_id: dict[int, dict] = {}
     before = None
@@ -64,7 +67,12 @@ def fetch_recent_messages(username: str, max_pages: int = MAX_PAGES) -> list[dic
         if oldest_ts and oldest_ts < cutoff:
             break            # went back far enough
         before = oldest["id"]
-    return list(by_id.values())
+    recent = []
+    for message in by_id.values():
+        timestamp = _parse_ts(message["ts"])
+        if timestamp and timestamp >= cutoff:
+            recent.append(message)
+    return sorted(recent, key=lambda message: message["ts"])
 
 
 def _parse_ts(ts: str):
@@ -98,10 +106,11 @@ def parse_messages(page_html: str) -> list[dict]:
 
 
 def collect(channels_config: dict, state: dict):
-    """Returns (messages_by_channel, new_state). Each channel yields ALL of its
-    currently-public messages (t.me/s shows ~the last 20), so the dashboard's
-    채널별 view can show a real recent-24h list and highlights reflect the current
-    snapshot rather than an incremental diff. state keeps the max id seen."""
+    """Returns (messages_by_channel, new_state) for the recent time window.
+
+    This is a snapshot, not an incremental feed.  ``state`` keeps the maximum
+    message id only for observability and future migration compatibility.
+    """
     messages_by_channel: dict[str, list[dict]] = {}
     new_state = dict(state)
 
