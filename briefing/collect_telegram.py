@@ -20,6 +20,10 @@ UA = "Mozilla/5.0 (compatible; InterestHubBriefing/1.0; +public preview scraper)
 # for busy channels; t.me/s serves ~20 messages per page via ?before=<id>.
 LOOKBACK = timedelta(hours=26)
 MAX_PAGES = 6
+# Default per-request timeout. The Actions build can afford to wait; the
+# dashboard's live refresh passes a shorter one so a single unresponsive channel
+# cannot burn the whole serverless request budget.
+TIMEOUT = 10
 
 POST_RE = re.compile(r'data-post="([^"]+)"')
 TEXT_RE = re.compile(r'tgme_widget_message_text[^"]*"[^>]*>(.*?)</div>', re.S)
@@ -39,14 +43,15 @@ def is_ad(text: str, exclude_keywords: list[str]) -> bool:
     return any(keyword in text for keyword in exclude_keywords)
 
 
-def fetch_channel_html(username: str, before: int | None = None) -> str:
+def fetch_channel_html(username: str, before: int | None = None, timeout: float = TIMEOUT) -> str:
     url = "https://t.me/s/" + username + (f"?before={before}" if before else "")
     request = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(request, timeout=10) as response:
+    with urllib.request.urlopen(request, timeout=timeout) as response:
         return response.read().decode("utf-8", errors="replace")
 
 
-def fetch_recent_messages(username: str, max_pages: int = MAX_PAGES) -> list[dict]:
+def fetch_recent_messages(username: str, max_pages: int = MAX_PAGES,
+                          timeout: float = TIMEOUT) -> list[dict]:
     """Return the deduplicated messages from the last LOOKBACK window.
 
     Pages are fetched backwards until their oldest message is outside the
@@ -57,7 +62,7 @@ def fetch_recent_messages(username: str, max_pages: int = MAX_PAGES) -> list[dic
     by_id: dict[int, dict] = {}
     before = None
     for _ in range(max_pages):
-        page = parse_messages(fetch_channel_html(username, before))
+        page = parse_messages(fetch_channel_html(username, before, timeout))
         if not page:
             break
         for message in page:

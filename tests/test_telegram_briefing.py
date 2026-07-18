@@ -34,6 +34,32 @@ class TelegramBriefingTests(unittest.TestCase):
 
         self.assertEqual([item["id"] for item in result], [2])
 
+    def test_collector_passes_its_timeout_down_to_each_page_request(self):
+        """The live refresh shortens the timeout so one unresponsive channel
+        cannot eat the whole serverless request budget."""
+        with patch.object(collect_telegram, "fetch_channel_html", return_value="<html>") as fetch, \
+             patch.object(collect_telegram, "parse_messages", return_value=[]):
+            collect_telegram.fetch_recent_messages("example", max_pages=1, timeout=6)
+
+        self.assertEqual(fetch.call_args.args[2], 6)
+
+    def test_unforced_briefing_reads_are_served_from_cache(self):
+        """Every read used to rescrape, so the briefing reshuffled on each page
+        refresh; unforced reads must reuse one snapshot for the TTL."""
+        server.CACHE.pop("briefing-live", None)
+        calls = []
+
+        def loader():
+            calls.append(1)
+            return {"generated_at": f"snapshot-{len(calls)}"}
+
+        first = server.cached("briefing-live", server.LIVE_BRIEFING_TTL, loader)
+        second = server.cached("briefing-live", server.LIVE_BRIEFING_TTL, loader)
+
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(first["generated_at"], second["generated_at"])
+        server.CACHE.pop("briefing-live", None)
+
     def test_latest_feed_uses_all_messages_not_cluster_representatives(self):
         old = {**message(1, datetime(2026, 7, 17, tzinfo=timezone.utc), "old $BTC post"), "channel": "A"}
         new = {**message(2, datetime(2026, 7, 18, tzinfo=timezone.utc), "new $BTC post"), "channel": "B"}

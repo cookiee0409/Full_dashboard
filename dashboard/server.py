@@ -460,6 +460,10 @@ def load_briefing() -> dict:
 # 3x/day). The scraper (briefing/collect_telegram.py) is standard-library only,
 # so it is safe to import into this stdlib-only server. ----
 KST = timezone(timedelta(hours=9))
+# Serverless requests are capped at ~10s, so a live scrape must finish well
+# inside that even when one channel is unresponsive.
+LIVE_SCRAPE_TIMEOUT = 6
+LIVE_BRIEFING_TTL = 60
 _COLLECTOR = None
 _BRIEF_TOKEN_RE = re.compile(r"\$[A-Za-z]{2,10}|[A-Z]{2,10}|[가-힣]{2,}")
 _BRIEF_STOP = {"입니다", "있습니다", "하는", "그리고", "합니다", "때문", "정도", "관련",
@@ -520,7 +524,8 @@ def live_briefing():
 
     def scrape(channel):
         try:
-            messages = collector.fetch_recent_messages(channel["username"], max_pages=1)
+            messages = collector.fetch_recent_messages(channel["username"], max_pages=1,
+                                                       timeout=LIVE_SCRAPE_TIMEOUT)
         except Exception as error:
             return channel, [], f"{type(error).__name__}: {error}"[:160]
         excludes = channel.get("exclude_keywords", [])
@@ -528,9 +533,11 @@ def live_briefing():
         good.sort(key=lambda m: m["ts"])
         return channel, good, None
 
-    # A bounded pool avoids a burst of simultaneous requests to t.me while still
-    # completing comfortably within the serverless request budget.
-    with ThreadPoolExecutor(max_workers=min(8, max(len(channels), 1))) as executor:
+    # Every channel is fetched in a single wave: t.me handles ~20 concurrent
+    # requests easily, and batching them instead multiplied the wall time by the
+    # number of waves, which is what pushed this past the serverless timeout and
+    # made the refresh button return partial (and therefore shifting) results.
+    with ThreadPoolExecutor(max_workers=max(len(channels), 1)) as executor:
         results = list(executor.map(scrape, channels))
 
     raw_by_channel, all_messages, failed_channels = {}, [], []
@@ -899,12 +906,18 @@ class Handler(SimpleHTTPRequestHandler):
             elif parsed.path == "/api/meme-chains": data, ttl = meme_chains(), 300
             elif parsed.path == "/api/meme-mentions": data, ttl = cached("meme-mentions", 60, meme_mentions), 60
             elif parsed.path == "/api/briefing":
-                # A user-triggered refresh requests fresh=1 and must not receive
-                # a CDN stale-while-revalidate response. Non-forced reads retain
-                # a tiny in-process coalescing window to protect t.me.
+                # A user-triggered refresh (fresh=1) must bypass every cache and
+                # re-scrape. Ordinary page loads are served from the CDN for a
+                # minute: previously *every* load re-scraped t.me, which was slow
+                # enough to hit the serverless timeout and returned a slightly
+                # different set of channels each time, so the briefing appeared
+                # to reshuffle on every refresh.
                 fresh = params.get("fresh", ["0"])[0] == "1"
-                data = live_briefing() if fresh else cached("briefing-live", 20, live_briefing)
-                ttl = 0
+                if fresh:
+                    data, ttl = live_briefing(), 0
+                else:
+                    data = cached("briefing-live", LIVE_BRIEFING_TTL, live_briefing)
+                    ttl = LIVE_BRIEFING_TTL
             elif parsed.path == "/api/kr-top10": data, ttl = cached("kr-top10", 300, kr_top10), 300
             elif parsed.path == "/api/stocks":
                 symbols = [x.upper() for x in params.get("symbols", [""])[0].split(",") if x][:12]

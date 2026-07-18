@@ -308,12 +308,40 @@ function createChart(cardEl) {
   };
   return { setChart, hasItem: () => !!state.item };
 }
-const stockChart = createChart($('.chart-card[data-chart="stocks"]'));
-const coinChart = createChart($('.chart-card[data-chart="coins"]'));
-const routeChart = item => (isCoinLike(item) ? coinChart : stockChart).setChart(item);
+// A single chart card serves the whole page. 주식 시세 must always show a stock
+// and 코인 시세 always a coin, so the last pick of each class is remembered and
+// the chart is re-pointed whenever the tab changes; 대시보드 keeps whichever of
+// the two was shown last.
+const chart = createChart($('.chart-card'));
+let lastStock = null, lastCoin = null, shownClass = null;   // shownClass: 'stock' | 'coin'
+const currentTab = () => document.body.dataset.tab || 'dashboard';
+function paintChartItem(item, cls) { shownClass = cls; chart.setChart(item); }
+// `auto` marks the fallback pick made when a list finishes loading: it fills an
+// empty chart but must never override an explicit choice or the tab's own class.
+function showStock(item, auto) {
+  if (!item) return;
+  lastStock = item;
+  if (currentTab() === 'coins') return;                       // coins tab is coin-only
+  if (auto && shownClass) return;
+  paintChartItem(item, 'stock');
+}
+function showCoin(item, auto) {
+  if (!item) return;
+  lastCoin = item;
+  if (currentTab() === 'stocks') return;                      // stocks tab is stock-only
+  // 대시보드의 기본 차트는 주식이 맡는다. 코인 자동 선택이 여기서도 차트를 채우면
+  // 어느 목록이 먼저 로드되느냐에 따라 기본 차트가 매번 달라진다.
+  if (auto && (currentTab() !== 'coins' || shownClass === 'coin')) return;
+  paintChartItem(item, 'coin');
+}
+const routeChart = item => (isCoinLike(item) ? showCoin : showStock)(item);
+function routeChartForTab(tab) {
+  if (tab === 'stocks' && lastStock) paintChartItem(lastStock, 'stock');
+  else if (tab === 'coins' && lastCoin) paintChartItem(lastCoin, 'coin');
+}
 $('#chart-modal-close').onclick = () => $('#chart-modal').close();
 async function loadMarket(isRetry) { try { const d=await api('market'); marketItems=d.items; $('#market-ticker').innerHTML=d.items.map(x => x.error ? `<button type="button" class="ticker-item chart-select"><span class="ticker-name">${esc(x.name)}</span><strong>—</strong></button>` : `<button type="button" class="ticker-item chart-select"><span class="ticker-name">${esc(x.name)}</span>${pct(x.changePct)}<strong>${money(x.price,x.currency)}</strong></button>`).join(''); bindRowClicks('#market-ticker .chart-select', i=>routeChart(marketItems[i])); $('#global-status').textContent='갱신됨 '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}); } catch(e) { fail('#market-ticker',e,isRetry?null:()=>loadMarket(true)); } }
-async function loadStocks(isRetry) { const symbols=activeMarket === 'kr' ? await krWatchlistSymbols() : settings.stocksUS; try { const d=await api('stocks?symbols='+encodeURIComponent(symbols.join(','))); $('#stock-rows').innerHTML=d.items.map(x=>`<button class="stock-row chart-select" data-symbol="${esc(x.symbol)}"><span class="stock-name">${esc(x.name)}<small>${esc(x.symbol)}</small></span><span class="price">${money(x.price,x.currency)}</span><span class="change">${pct(x.changePct)}</span><span class="marketcap">${x.marketCapText || marketCap(x.marketCap,x.currency)}</span></button>`).join(''); $$('.stock-row').forEach((row,i)=>row.onclick=()=>stockChart.setChart(d.items[i])); if (!stockChart.hasItem() && d.items[0]) stockChart.setChart(d.items[0]); updateTime('#stocks-updated'); } catch(e) { fail('#stock-rows',e,isRetry?null:()=>loadStocks(true)); } }
+async function loadStocks(isRetry) { const symbols=activeMarket === 'kr' ? await krWatchlistSymbols() : settings.stocksUS; try { const d=await api('stocks?symbols='+encodeURIComponent(symbols.join(','))); $('#stock-rows').innerHTML=d.items.map(x=>`<button class="stock-row chart-select" data-symbol="${esc(x.symbol)}"><span class="stock-name">${esc(x.name)}<small>${esc(x.symbol)}</small></span><span class="price">${money(x.price,x.currency)}</span><span class="change">${pct(x.changePct)}</span><span class="marketcap">${x.marketCapText || marketCap(x.marketCap,x.currency)}</span></button>`).join(''); $$('.stock-row').forEach((row,i)=>row.onclick=()=>showStock(d.items[i])); showStock(d.items[0], true); updateTime('#stocks-updated'); } catch(e) { fail('#stock-rows',e,isRetry?null:()=>loadStocks(true)); } }
 function mentionRow(x, i) { return `<div class="coin-row chart-select" role="button" tabindex="0" data-index="${i}"><span class="coin-rank">${x.mentions ?? '—'}</span><span class="coin-name"><img src="${esc(x.image)}" alt=""><span>${esc(x.name)}<small>${esc(x.symbol)}</small></span>${gmgnIcon(x.gmgn)}${xSearchIcon(x.x_search)}${teleIcon(x.sample_link)}</span><span class="coin-price">${money(x.price)}</span><span class="change">${pct(x.change24)}</span><span class="marketcap">${marketCap(x.marketCap)}</span></div>`; }
 function renderMeme() {
   if (activeChain === 'mentions') {
@@ -322,7 +350,7 @@ function renderMeme() {
     $('.meme-card').classList.remove('alert');
     $('.meme-table-head span:first-child').textContent = '언급';
     $('#meme-rows').innerHTML = items.length ? items.map(mentionRow).join('') : '<p class="empty-note">아직 수집된 언급 데이터가 없습니다.</p>';
-    bindRowClicks('#meme-rows .chart-select', i => coinChart.setChart(items[i]));
+    bindRowClicks('#meme-rows .chart-select', i => showCoin(items[i]));
     return;
   }
   $('.meme-table-head span:first-child').textContent = '#';
@@ -333,7 +361,7 @@ function renderMeme() {
   $('.meme-card h2').textContent=`밈코인 가격 보드 · ${chainLabel}`;
   const alert=items.some(x=>Math.abs(x.change24)>=15); $('.meme-card').classList.toggle('alert',alert);
   $('#meme-rows').innerHTML=items.map((x,i)=>`<div class="coin-row chart-select" role="button" tabindex="0" data-index="${i}"><span class="coin-rank">${x.rank || i+1}</span><span class="coin-name"><img src="${esc(x.image)}" alt=""><span>${esc(x.name)}<small>${esc(x.symbol)}</small></span>${gmgnIcon(x.gmgn)}</span><span class="coin-price">${money(x.price)}</span><span class="change">${pct(x.change24)}</span><span class="marketcap">${marketCap(x.marketCap)}</span></div>`).join('');
-  bindRowClicks('#meme-rows .chart-select', i=>coinChart.setChart(items[i]));
+  bindRowClicks('#meme-rows .chart-select', i=>showCoin(items[i]));
 }
 async function loadMemeMentions(isRetry) {
   try { mentionsData = await api('meme-mentions'); if (activeChain === 'mentions') renderMeme(); }
@@ -350,8 +378,8 @@ async function loadMeme(isRetry) {
   } catch(e) { fail('#meme-rows',e,isRetry?null:()=>loadMeme(true)); }
   loadMemeMentions();
 }
-function renderRanking() { const items=[...rankingItems].sort((a,b)=>{ const av=a[rankSort.field],bv=b[rankSort.field]; const result=typeof av==='string'?av.localeCompare(bv):((av??0)-(bv??0)); return rankSort.asc?result:-result; }); $('#rank-rows').innerHTML=items.map((x,i)=>`<div class="rank-row chart-select" role="button" tabindex="0"><span class="coin-rank">${x.rank}</span><span class="coin-name"><img src="${esc(x.image)}" alt=""><span>${esc(x.name)}<small>${esc(x.symbol)}</small></span>${xIcon(x.twitter)}</span><span class="coin-price">${money(x.price)}</span><span class="change">${pct(x.change24)}</span><span class="marketcap">${marketCap(x.marketCap)}</span></div>`).join(''); bindRowClicks('#rank-rows .chart-select', i=>coinChart.setChart(items[i])); $$('.rank-table-head button').forEach(b=>b.classList.toggle('sorted',b.dataset.sort===rankSort.field)); }
-async function loadRanking(isRetry) { try { const d=await api(`coins?category=${activeCategory}&limit=20`); rankingItems=d.items; renderRanking(); updateTime('#ranking-updated'); } catch(e) { fail('#rank-rows',e,isRetry?null:()=>loadRanking(true)); } }
+function renderRanking() { const items=[...rankingItems].sort((a,b)=>{ const av=a[rankSort.field],bv=b[rankSort.field]; const result=typeof av==='string'?av.localeCompare(bv):((av??0)-(bv??0)); return rankSort.asc?result:-result; }); $('#rank-rows').innerHTML=items.map((x,i)=>`<div class="rank-row chart-select" role="button" tabindex="0"><span class="coin-rank">${x.rank}</span><span class="coin-name"><img src="${esc(x.image)}" alt=""><span>${esc(x.name)}<small>${esc(x.symbol)}</small></span>${xIcon(x.twitter)}</span><span class="coin-price">${money(x.price)}</span><span class="change">${pct(x.change24)}</span><span class="marketcap">${marketCap(x.marketCap)}</span></div>`).join(''); bindRowClicks('#rank-rows .chart-select', i=>showCoin(items[i])); $$('.rank-table-head button').forEach(b=>b.classList.toggle('sorted',b.dataset.sort===rankSort.field)); }
+async function loadRanking(isRetry) { try { const d=await api(`coins?category=${activeCategory}&limit=20`); rankingItems=d.items; renderRanking(); showCoin(d.items[0], true); updateTime('#ranking-updated'); } catch(e) { fail('#rank-rows',e,isRetry?null:()=>loadRanking(true)); } }
 function relative(pub) { const h=Math.max(0,Math.round((Date.now()-new Date(pub))/36e5)); return h<1?'방금 전':h<24?`${h}시간 전`:`${Math.round(h/24)}일 전`; }
 const IMPORTANT_NEWS_RE = /(실적|공시|수주|유상증자|자사주|인수합병|급등|급락)/;
 async function loadNews(kind,id,timeId,isRetry) { try { const d=await api('news?kind='+kind); $(id).innerHTML=d.items.map(x=>`<a class="news-row" href="${esc(x.url)}" target="_blank" rel="noopener"><div class="news-title">${kind==='stocks'&&IMPORTANT_NEWS_RE.test(x.title)?'<span class="badge-important">주요</span>':''}${esc(x.title)}</div><div class="news-meta"><span>${esc(x.source)}</span><span>·</span><span>${relative(x.published)}</span></div></a>`).join(''); updateTime(timeId); } catch(e) { fail(id,e,isRetry?null:()=>loadNews(kind,id,timeId,true)); } }
@@ -461,27 +489,42 @@ function renderBriefing() {
   $('#brief-list').innerHTML = posts.length ? posts.map(briefRow).join('') : '<p class="empty-note">아직 수집된 브리핑이 없습니다.</p>';
   bindBriefRows($('#brief-list'));
 }
-// Page load reads the static snapshot (instant); the refresh button hits
-// /api/briefing, which scrapes t.me/s live on the server so new posts appear
-// without waiting for the 3x/day pipeline.
-async function loadBriefing(live) {
-  if (live) $('#brief-list').innerHTML = '<p class="loading">실시간으로 불러오는 중… (몇 초 걸립니다)</p>';
+// 인기순 · 최신순 · 채널별 all render from the one snapshot held in
+// `briefingData`, so the three views can never disagree about what "최신" is.
+// The committed data/briefing.json is only rebuilt 3x/day, so it is used for the
+// instant first paint and then replaced by a live server-side scrape of t.me/s.
+function showBriefUpdated() {
+  const failures = briefingData?.crypto_brief?.failed_channels || [];
+  const updated = briefingData?.generated_at ? relative(briefingData.generated_at) : '—';
+  $('#brief-updated').textContent = failures.length ? `${updated} · ${failures.length}개 채널 실패` : updated;
+}
+async function loadStaticBriefing() {
   try {
-    briefingData = live ? await api('briefing?fresh=1') : await (await fetch('/data/briefing.json?t=' + Date.now())).json();
-    renderBriefing();
-    const failures = briefingData?.crypto_brief?.failed_channels || [];
-    const updated = briefingData.generated_at ? relative(briefingData.generated_at) : '—';
-    $('#brief-updated').textContent = failures.length ? `${updated} · ${failures.length}개 채널 실패` : updated;
-  } catch(e) { fail('#brief-list', e, live ? null : () => loadBriefing(false)); }
+    briefingData = await (await fetch('/data/briefing.json?t=' + Date.now())).json();
+    renderBriefing(); showBriefUpdated();
+  } catch { /* the live fetch is the real source; a missing snapshot is fine */ }
+}
+// fresh=true (the ↻ buttons) forces a new scrape. Otherwise the CDN-cached
+// response is reused, so repeated page loads are fast and show the *same*
+// briefing instead of re-scraping — and re-shuffling — it on every visit.
+async function loadBriefing(fresh) {
+  if (!briefingData) await loadStaticBriefing();
+  if (fresh) $('#brief-list').innerHTML = '<p class="loading">실시간으로 불러오는 중… (몇 초 걸립니다)</p>';
+  try {
+    briefingData = await api(fresh ? 'briefing?fresh=1' : 'briefing');
+    renderBriefing(); showBriefUpdated();
+  } catch(e) {
+    if (briefingData) renderBriefing();          // keep the snapshot on screen
+    else fail('#brief-list', e, () => loadBriefing(false));
+  }
 }
 $$('#brief-sort-tabs button').forEach(b => b.onclick = () => {
   briefSort = b.dataset.sort;
   $$('#brief-sort-tabs button').forEach(x => x.classList.toggle('active', x === b));
-  if (briefSort === 'new') loadBriefing(true);
-  else renderBriefing();
+  renderBriefing();                              // same snapshot, different view
 });
 
-function loadAll(liveBriefing = false) { loadMarket();loadStocks();loadMeme();loadRanking();loadNews('stocks','#stocks-news','#stocks-news-updated');loadNews('world','#world-news','#world-news-updated');loadNews('crypto','#crypto-news','#crypto-news-updated');loadFear();loadAirdrops();loadBriefing(liveBriefing); }
+function loadAll(freshBriefing = false) { loadMarket();loadStocks();loadMeme();loadRanking();loadNews('stocks','#stocks-news','#stocks-news-updated');loadNews('world','#world-news','#world-news-updated');loadNews('crypto','#crypto-news','#crypto-news-updated');loadFear();loadAirdrops();loadBriefing(freshBriefing); }
 $$('.stock-tab').forEach(b=>b.onclick=()=>{activeMarket=b.dataset.market;$$('.stock-tab').forEach(x=>x.classList.toggle('active',x===b));loadStocks()});$$('.category-tabs button').forEach(b=>b.onclick=()=>{activeCategory=b.dataset.category;$$('.category-tabs button').forEach(x=>x.classList.toggle('active',x===b));loadRanking()});$$('.rank-table-head button').forEach(b=>b.onclick=()=>{rankSort.asc=rankSort.field===b.dataset.sort?!rankSort.asc:false;rankSort.field=b.dataset.sort;renderRanking()});
 $('#refresh-all').onclick=()=>loadAll(true); $$('.refresh').forEach(b=>b.onclick=()=>({stocks:loadStocks,meme:loadMeme,ranking:loadRanking,'stocks-news':()=>loadNews('stocks','#stocks-news','#stocks-news-updated'),'crypto-news':()=>{loadNews('crypto','#crypto-news','#crypto-news-updated');loadFear()},'world-news':()=>loadNews('world','#world-news','#world-news-updated'),airdrops:loadAirdrops,brief:()=>loadBriefing(true)}[b.dataset.target]()));
 const dialog=$('#settings'); $('#open-settings').onclick=()=>{ $('#theme').value=settings.theme;$('#color-mode').value=settings.colorMode;$('#stocks-kr').value=settings.stocksKR.join(', ');$('#stocks-us').value=settings.stocksUS.join(', ');$('#stock-search').value='';$('#stock-search-results').innerHTML='';dialog.showModal();};$('#add-stock').onclick=()=>$('#open-settings').click(); $$('dialog [value="cancel"]').forEach(b=>b.onclick=()=>dialog.close()); $('#save-settings').onclick=()=>{settings.theme=$('#theme').value;settings.colorMode=$('#color-mode').value;settings.stocksKR=$('#stocks-kr').value.split(',').map(x=>x.trim()).filter(Boolean);settings.stocksUS=$('#stocks-us').value.split(',').map(x=>x.trim()).filter(Boolean);localStorage.setItem('hub.settings.v1',JSON.stringify(settings));applySettings();loadStocks();};
@@ -497,6 +540,7 @@ function applyTab(tab) {
     card.hidden = tab !== 'dashboard' && !tabs.includes(tab);
   });
   document.body.dataset.tab = tab;
+  routeChartForTab(tab);   // 주식 탭이면 마지막 주식, 코인 탭이면 마지막 코인으로 전환
 }
 $$('#main-tabs button').forEach(b => b.onclick = () => { location.hash = b.dataset.tab; });
 window.addEventListener('hashchange', () => applyTab(location.hash.slice(1)));
