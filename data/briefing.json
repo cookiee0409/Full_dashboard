@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-18T07:25:00.520595+09:00",
+  "generated_at": "2026-07-18T14:46:08.885876+09:00",
   "crypto_brief": {
     "status": "ok",
     "highlights": [
@@ -11,18 +11,18 @@
         "cluster_size": 49
       },
       {
-        "text": "📌 불개미 일일시황 | 2026.07.16 (목)\n",
+        "text": "📌 삼전닉스 레버리지…ETF 투자 규제 강화 \n",
         "channel": "불개미 CRYPTO",
-        "link": "https://t.me/fireant_crypto/42871",
-        "ts": "2026-07-16T05:45:26+00:00",
-        "cluster_size": 35
+        "link": "https://t.me/fireant_crypto/42881",
+        "ts": "2026-07-16T09:59:29+00:00",
+        "cluster_size": 32
       },
       {
         "text": "🎤 DSCVR & 취미생활방 AMA\n",
         "channel": "마샬 공유방 2.0",
         "link": "https://t.me/marshallog/22903",
         "ts": "2026-07-16T06:15:39+00:00",
-        "cluster_size": 23
+        "cluster_size": 20
       },
       {
         "text": "📌 책임없는 쾌락 말고....",
@@ -32,31 +32,31 @@
         "cluster_size": 15
       },
       {
-        "text": "🪙 OKX - 월드컵 우승자 맞추기 마지막 찬스\n",
+        "text": "[거시경제] 뉴스\n",
         "channel": "불개미 CRYPTO",
-        "link": "https://t.me/fireant_crypto/42875",
-        "ts": "2026-07-16T06:51:26+00:00",
+        "link": "https://t.me/fireant_crypto/42892",
+        "ts": "2026-07-18T01:03:52+00:00",
         "cluster_size": 9
       },
       {
-        "text": "6월 말부터 오늘까지 정말 쉼 없이 달려온 것 같습니다.",
-        "channel": "MEME",
-        "link": "https://t.me/Yndegen/3619",
-        "ts": "2026-07-14T16:28:04+00:00",
-        "cluster_size": 8
-      },
-      {
-        "text": "Hibachi 의 3Q  Hibachi 에서 3Q 요약보고를 발표 하였습니다  55K+ Traders $10B Trading Vol 40M Trades $2.5M+ Fee Generated  여러가지 내용이 있는데 가장 중아하다고 보이는 것은  Spo",
+        "text": "[PerpDEX] GRVT\n",
         "channel": "PaguInfo 파구정보 (DeFi Info)",
-        "link": "https://t.me/pgyinfo/14265",
-        "ts": "2026-07-17T15:34:58+00:00",
-        "cluster_size": 6
+        "link": "https://t.me/pgyinfo/14257",
+        "ts": "2026-07-17T09:11:03+00:00",
+        "cluster_size": 7
       },
       {
-        "text": "😄 THE RISE OF ROBOTS\n",
-        "channel": "윤로그 공지방",
-        "link": "https://t.me/yunlog_announcement/16656",
-        "ts": "2026-07-15T13:15:03+00:00",
+        "text": "Hibachi 의 3Q\n",
+        "channel": "PaguInfo 파구정보 (DeFi Info)",
+        "link": "https://t.me/pgyinfo/14264",
+        "ts": "2026-07-17T15:34:48+00:00",
+        "cluster_size": 7
+      },
+      {
+        "text": "하이닉스 평균수익률 1.71%",
+        "channel": "마샬 공유방 2.0",
+        "link": "https://t.me/marshallog/22904",
+        "ts": "2026-07-16T06:54:28+00:00",
         "cluster_size": 6
       }
     ],
@@ -217,46 +217,6 @@
       ],
       "불개미 CRYPTO": [
         {
-          "text": "📌 실시간 코인시장 급등, 급락 TOP 10 코인\n\nhttps://antinfo.io/",
-          "link": "https://t.me/fireant_crypto/42870",
-          "ts": "2026-07-16T05:24:57+00:00"
-        },
-        {
-          "text": "📌 불개미 일일시황 | 2026.07.16 (목)\n\n1️⃣ BTC ETH 유출입\n• BTC: +$107.7M\n• ETH: +$53.9M\n• ETF 데이터는 마지막 거래일 기준\n\n2️⃣ 미결제약정 추이 (24시간 기준)\n• BTC 24시간: -2.97%\n• ETH 24시간: -1.60%\n\n3️⃣ DAT 추이\n• WEEKLY NET INFLOW: $-85.45M\n\n4️⃣ 코인베이스 프리미엄\n• 현재 지수: -0.0988%\n\n5️⃣ 요약\nBTC는 $64,932, ETH는 $1,925.55에 거래 중이다. 공포탐욕지수는 25 (Extreme Fear) 수준이다. 이틀연속 순유입!!",
-          "link": "https://t.me/fireant_crypto/42871",
-          "ts": "2026-07-16T05:45:26+00:00"
-        },
-        {
-          "text": "오스티움 공격자는 한시간 전 쯤부터 토네이도캐시로 세탁 시작. 돌려받기는 글른 것 같네요.\n\nhttps://arbiscan.io/address/0x16cdda08407da70c24dea96cf95d8168dbc1704d",
-          "link": "https://t.me/fireant_crypto/42872",
-          "ts": "2026-07-16T06:29:28+00:00"
-        },
-        {
-          "text": "Noxa 도메인 해킹\n\n상호작용하지 마세요. 답없네 얘네",
-          "link": "https://t.me/fireant_crypto/42873",
-          "ts": "2026-07-16T06:39:04+00:00"
-        },
-        {
-          "text": "Noxa 도메인 해킹  상호작용하지 마세요. 답없네 얘네",
-          "link": "https://t.me/fireant_crypto/42874",
-          "ts": "2026-07-16T06:40:06+00:00"
-        },
-        {
-          "text": "🪙 OKX - 월드컵 우승자 맞추기 마지막 찬스\n\nOKX 월드컵 우승자 예측이벤트 \n\n월드컵 결승에 최종적으로 \n\n아르마다 스페인 vs 메시의 아르헨티나가 맞붙습니다. \n\nOKX에서는 월드컵결승을 예측할 수 있는  캠페인을 진행중이며 이 캠페인은 돈을 거는게 아니라 무료로 얻는 포인트로 신규가입자에게 총 4BTC를 쉐어받습니다.",
-          "link": "https://t.me/fireant_crypto/42875",
-          "ts": "2026-07-16T06:51:26+00:00"
-        },
-        {
-          "text": "빗썸(Bithumb) 공지\n아지트(AZIT), 쿠디스(CUDIS), 팬시(FANC), 템코(TEMCO), 네스트리(EGG), 스탯(STAT) 거래유의종목 지정 \n2026-07-16 16:00:01",
-          "link": "https://t.me/fireant_crypto/42876",
-          "ts": "2026-07-16T07:00:24+00:00"
-        },
-        {
-          "text": "코인원(Coinone) 공지\n거래유의 종목 지정 안내: 스트리머(DATA2) 외 11종 \n2026-07-16 16:00:11",
-          "link": "https://t.me/fireant_crypto/42877",
-          "ts": "2026-07-16T07:03:24+00:00"
-        },
-        {
           "text": "한 100개정도는 상폐해라",
           "link": "https://t.me/fireant_crypto/42878",
           "ts": "2026-07-16T07:03:38+00:00"
@@ -310,6 +270,41 @@
           "text": "아",
           "link": "https://t.me/fireant_crypto/42890",
           "ts": "2026-07-17T13:13:32+00:00"
+        },
+        {
+          "text": "[거시경제] 뉴스\n\n트럼프 미디어, 금융사에 할인된 API 제안\n트럼프 미디어가 금융사에 월 6만 달러의 할인된 API 계획을 제안했다.\n\n원문보기 ㅣ개미투자정보 ANTINFO\n출처 : Financial Juice · 20:58 KST  #거시",
+          "link": "https://t.me/fireant_crypto/42892",
+          "ts": "2026-07-18T01:03:52+00:00"
+        },
+        {
+          "text": "[거시경제] 뉴스  트럼프 미디어, 금융사에 할인된 API 제안 트럼프 미디어가 금융사에 월 6만 달러의 할인된 API 계획을 제안했다.  원문보기 ㅣ개미투자정보 ANTINFO 출처 : Financial Juice · 20:58 KST  #거시",
+          "link": "https://t.me/fireant_crypto/42893",
+          "ts": "2026-07-18T01:04:44+00:00"
+        },
+        {
+          "text": "✔️ 업비트 상장되어있는 봉크는 잎출금 막아놓고 1시간만에 2배 넘게 올림",
+          "link": "https://t.me/fireant_crypto/42894",
+          "ts": "2026-07-18T01:09:32+00:00"
+        },
+        {
+          "text": "📌 실시간 한국거래소 거래량, 상승률 TOP 10\n\nbonk, egg, HPP, ES, ZTX, STAT, H, WIKEN 등 상승률 상위에 올라와있는 프로젝트는 대부분 다 상장폐지가 예정되어있거나 유의종목으로 지정된 종목들입니다. \n\n마지막 지뢰찾기 게임에 굳이 참여할 필요는 없을 것 같음. \n\n한국거래소 대시보드 : https://antinfo.io/kr-exchange/",
+          "link": "https://t.me/fireant_crypto/42895",
+          "ts": "2026-07-18T01:24:53+00:00"
+        },
+        {
+          "text": "[크립토] 뉴스\n\nSBI그룹, 싱가포르 암호화폐 플랫폼 코인하코 인수\nSBI그룹이 싱가포르의 암호화폐 플랫폼 코인하코를 인수했다.\n\n원문보기 ㅣ개미투자정보 ANTINFO\n출처 : Techinasia · 10:37 KST  #크립토",
+          "link": "https://t.me/fireant_crypto/42896",
+          "ts": "2026-07-18T01:37:56+00:00"
+        },
+        {
+          "text": "[크립토] 뉴스  SBI그룹, 싱가포르 암호화폐 플랫폼 코인하코 인수 SBI그룹이 싱가포르의 암호화폐 플랫폼 코인하코를 인수했다.  원문보기 ㅣ개미투자정보 ANTINFO 출처 : Techinasia · 10:37 KST  #크립토",
+          "link": "https://t.me/fireant_crypto/42897",
+          "ts": "2026-07-18T01:38:20+00:00"
+        },
+        {
+          "text": "주말에 약속없으신 분들은 봉크 업비트 단타대전 참전해보면 재밌을듯 ㅋㅋㅋ",
+          "link": "https://t.me/fireant_crypto/42898",
+          "ts": "2026-07-18T02:37:39+00:00"
         }
       ],
       "취미생활방": [
@@ -411,16 +406,6 @@
       ],
       "PaguInfo 파구정보 (DeFi Info)": [
         {
-          "text": "GRVT 토큰 뜬듯  https://etherscan.io/token/0xad29f2723fcdbcf665f210f25e06f97477e417cf#balances  일단 BNB 체인과의 브리지는 웜홀 BNB 체인 가서 뭐하실까요?!",
-          "link": "https://t.me/pgyinfo/14246",
-          "ts": "2026-07-16T07:01:11+00:00"
-        },
-        {
-          "text": "[안녕하세요 불개미입니다. D3 Smoothie.com 토큰 홀딩 캠페인 관련 손실보전 공지]\n\nSmoothie.com 토큰이 캠페인 이후에 급락하여 몇시간만에 반토막이 났습니다. \n\n캠페인의 본래 취지는 구독자들이 리스크대비 상대적으로 높은 리워드를 가져가면서 프로젝트의 제품들을 사용해볼 수 있는 기회를 만드는 것 입니다. 이것이 제가 여러분들을 대상으로 각종 캠페인을 개최하는 이유이며 명분입니다. \n\nSmoothie.com 캠페인의 경우 본래 취지와 달리 리워드를 받아도 손실을 보는 상황이 발생하였습니다. 후처리에 대하여 안내드립니다.\n\n✔️ 처리방안\n1. 모든 참여자들의 손실을 보전하겠습니다. \n2. 가격이 떨어지기 전 공지드린대로 리워드도 똑같이 지급하겠습니다. \n3. 결과적으로 캠페인에 참여하신분들은 최초에 예상하셨던대로 손실없이 모든 리워드를 받을 수 있게 하겠습니다. \n\n➕세부내용\n1. Smoothie.com 매수, 홀딩을 통해 수익을 거두신 분은 손실을 보전하지 않습니다. \n2. 캠페인 기간동안 정상적으로 캠페인 참여폼을 접수한 지갑에 한하여 보전합니다. \n * 캠페인 참여자도  아닌데 손해봤다고 멘징해달라는건 안해드립니다.\n3. 손실 보전 기준은 Smoothie.com 매수 홀딩이벤트 참여에 대한 손실에 한합니다. 다른 도메인과 Smoothie.com 트레이딩 활동으로 인한 손실은 보전하지 않습니다. \n4. bridge 수수료나, 각종 매매 수수료, 슬리피지등은 보전하지 않습니다. \n5. 모든 단위는 달러단위로 통일됩니다. \n6. 최대 매수 인정금액은 200달러입니다.\n해당자는 첨부드린 폼을 작성해주시기 바랍니다. \n\n* 접수기한 : 7월 18일 자정까지\n\n항상 캠페인 참여해주셔서 너무 감사드립니다. 앞으로도 리스크보다 리워드를 노릴 수 있게 하고, 좋은 이벤트들 많이 기획해 오겠습니다. 앞으로도 잘 부탁드립니다!!",
-          "link": "https://t.me/pgyinfo/14248",
-          "ts": "2026-07-16T13:22:47+00:00"
-        },
-        {
           "text": "🍀 GRVT\n\n- 에어드랍 배율 플랜 선택\nTGE 수령시 - 1배 (기본)\nTGE 4개월 이후 수령시 - 2배\nTGE 8개월 이후 수령시 - 4배\n🕐 배율 플랜 선택 기간 : 7월 17일 오전 9시까지\n(선택하지 않을시 기본 플랜 적용)\n\n내일 오전까지 선택입니다\n📌 https://grvt.io/exchange/reward-portal",
           "link": "https://t.me/pgyinfo/14249",
           "ts": "2026-07-16T14:37:28+00:00"
@@ -489,9 +474,49 @@
           "text": "Hibachi FLP Vault 가 열렸네요  MM Vault 라서 꾸준히 적정 APR 을 유지해 오고 있고, 안정적이지 않을까 합니다  물론 시장 상황과 전략등에 따라 변동이 있을 수 있고, 손실 확률이 있는 상품이니 참고하시기 바랍니다.  https://x.com/hibachi_xyz/status/2076696562550349995",
           "link": "https://t.me/pgyinfo/14266",
           "ts": "2026-07-17T15:39:21+00:00"
+        },
+        {
+          "text": "DeFi News Summary\n2026-07-18 03:00 KST\n\n[DeFi]\n- Ondo: Ondo, 10종의 토큰화 주식 추가 및 24/7 거래 지원 링크\n- Ondo: Ondo, Glider의 MAG7 포트폴리오 지원 링크\n- Pendle: 수익률 업데이트 링크\n- Base: Base, 네이티브 계정 추상화 도입 예정 링크\n\n[Chain]\n- GIWA: GIWA Chain Karst 하드포크 업데이트 링크\n\n[PerpDEX]\n- Variational: Variational, UBER 및 RIVN 무기한 선물 상장 링크\n- Evedex: Evedex, SPCX 선물 거래 지원 링크\n- Variational: Variational, 새로운 '스왑' 상품 소개 링크",
+          "link": "https://t.me/pgyinfo/14267",
+          "ts": "2026-07-18T03:24:18+00:00"
+        },
+        {
+          "text": "Fable, 구독 모델에 영구 포함",
+          "link": "https://t.me/pgyinfo/14268",
+          "ts": "2026-07-18T03:25:56+00:00"
         }
       ],
       "Pow's Gem Calls": [
+        {
+          "text": "S H E E P",
+          "link": "https://t.me/PowsGemCalls/45904",
+          "ts": "2026-07-16T19:30:42+00:00"
+        },
+        {
+          "text": "She is asking GREAT questions",
+          "link": "https://t.me/PowsGemCalls/45905",
+          "ts": "2026-07-16T19:32:05+00:00"
+        },
+        {
+          "text": "I believe $JUGGERNAUT can / will as well, but more convinced in the other 2.",
+          "link": "https://t.me/PowsGemCalls/45906",
+          "ts": "2026-07-16T19:53:48+00:00"
+        },
+        {
+          "text": "Bought some more $JUGGERNAUT",
+          "link": "https://t.me/PowsGemCalls/45907",
+          "ts": "2026-07-16T20:09:02+00:00"
+        },
+        {
+          "text": "Slam the winners, cut the losers.",
+          "link": "https://t.me/PowsGemCalls/45908",
+          "ts": "2026-07-16T20:10:42+00:00"
+        },
+        {
+          "text": "Don't marry your bags, play with what is in front of you if you choose to act.",
+          "link": "https://t.me/PowsGemCalls/45909",
+          "ts": "2026-07-16T20:10:56+00:00"
+        },
         {
           "text": "Duble https://x.com/m1tch37/status/2077775253560762430",
           "link": "https://t.me/PowsGemCalls/45910",
@@ -631,6 +656,121 @@
           "text": "You step back right and zoom it out. \n\nGonna go on a schizo shill here.",
           "link": "https://t.me/PowsGemCalls/45946",
           "ts": "2026-07-17T20:49:49+00:00"
+        },
+        {
+          "text": "On-chain stripe 6m circ? Yeah moon dat",
+          "link": "https://t.me/PowsGemCalls/45951",
+          "ts": "2026-07-17T22:43:09+00:00"
+        },
+        {
+          "text": "They start at 0.4, was fair price eval",
+          "link": "https://t.me/PowsGemCalls/45955",
+          "ts": "2026-07-17T22:45:04+00:00"
+        },
+        {
+          "text": "We are starting at the floor w/ them",
+          "link": "https://t.me/PowsGemCalls/45956",
+          "ts": "2026-07-17T22:45:10+00:00"
+        },
+        {
+          "text": "Worth a shot",
+          "link": "https://t.me/PowsGemCalls/45957",
+          "ts": "2026-07-17T22:45:13+00:00"
+        },
+        {
+          "text": "I also aped into $QUANT",
+          "link": "https://t.me/PowsGemCalls/45959",
+          "ts": "2026-07-17T22:47:48+00:00"
+        },
+        {
+          "text": "I also aped into $QUANT",
+          "link": "https://t.me/PowsGemCalls/45960",
+          "ts": "2026-07-17T22:48:13+00:00"
+        },
+        {
+          "text": "Basically going to continue trying to diversify RH port of just not mainly memes and more into rwa/agentic/util overall as a RH bull",
+          "link": "https://t.me/PowsGemCalls/45961",
+          "ts": "2026-07-17T22:49:21+00:00"
+        },
+        {
+          "text": "LOL",
+          "link": "https://t.me/PowsGemCalls/45963",
+          "ts": "2026-07-17T22:49:30+00:00"
+        },
+        {
+          "text": "YO",
+          "link": "https://t.me/PowsGemCalls/45964",
+          "ts": "2026-07-17T22:49:31+00:00"
+        },
+        {
+          "text": "SEND THEM ALL",
+          "link": "https://t.me/PowsGemCalls/45965",
+          "ts": "2026-07-17T22:49:40+00:00"
+        },
+        {
+          "text": "LET THEM COOK",
+          "link": "https://t.me/PowsGemCalls/45966",
+          "ts": "2026-07-17T22:50:40+00:00"
+        },
+        {
+          "text": "Then came ok so is this chain cooked convo on the timeline or more of the doomerism \"IF CASHCAT FALLS ROBINHOOD CHAIN IS DEAD FOR GOOD\"",
+          "link": "https://t.me/PowsGemCalls/45967",
+          "ts": "2026-07-17T22:55:21+00:00"
+        },
+        {
+          "text": "https://fxtwitter.com/traderpow/status/2078252037708669089  Higher for all of Robinhood eco, don't be shortsighted.",
+          "link": "https://t.me/PowsGemCalls/45968",
+          "ts": "2026-07-17T22:55:48+00:00"
+        },
+        {
+          "text": "Slam the winners, cut the losers.",
+          "link": "https://t.me/PowsGemCalls/45969",
+          "ts": "2026-07-17T22:56:18+00:00"
+        },
+        {
+          "text": "$TENDIES $CASHCAT $INDEX",
+          "link": "https://t.me/PowsGemCalls/45970",
+          "ts": "2026-07-17T22:57:55+00:00"
+        },
+        {
+          "text": "RWA to fill port alongside memes/agentic is not a bad idea",
+          "link": "https://t.me/PowsGemCalls/45973",
+          "ts": "2026-07-17T22:59:09+00:00"
+        },
+        {
+          "text": "Able to allocate to all the sectional winners? Win forever",
+          "link": "https://t.me/PowsGemCalls/45974",
+          "ts": "2026-07-17T22:59:22+00:00"
+        },
+        {
+          "text": "Pre",
+          "link": "https://t.me/PowsGemCalls/45975",
+          "ts": "2026-07-17T22:59:24+00:00"
+        },
+        {
+          "text": "Slam the winners, cut the losers.",
+          "link": "https://t.me/PowsGemCalls/45977",
+          "ts": "2026-07-17T22:59:38+00:00"
+        },
+        {
+          "text": "Don't marry your bags, until they've proven strength then maybe get more excited. That's my strategy I will be continuing to preach.",
+          "link": "https://t.me/PowsGemCalls/45978",
+          "ts": "2026-07-17T23:00:07+00:00"
+        },
+        {
+          "text": "There is so much gay sell shaming like SYBAU pussy we are in a bear market, worry bout your own lmao",
+          "link": "https://t.me/PowsGemCalls/45979",
+          "ts": "2026-07-17T23:00:24+00:00"
+        },
+        {
+          "text": "Bros act as if they wouldn't press the sell button ever and only be a buyer SYBAU",
+          "link": "https://t.me/PowsGemCalls/45980",
+          "ts": "2026-07-17T23:00:44+00:00"
+        },
+        {
+          "text": "We had drillers selling 15% on sol sub 60k mcap coins , do what you want",
+          "link": "https://t.me/PowsGemCalls/45981",
+          "ts": "2026-07-17T23:01:14+00:00"
         }
       ],
       "에어드랍코리아 (Airdropkorea)": [
@@ -829,36 +969,6 @@
       ],
       "럭키증일이": [
         {
-          "text": "Channel name was changed to «볼링장과 낚시터»",
-          "link": "https://t.me/btcbullforever/50681",
-          "ts": "2026-07-16T02:06:27+00:00"
-        },
-        {
-          "text": "Channel name was changed to «럭키증일이»",
-          "link": "https://t.me/btcbullforever/50682",
-          "ts": "2026-07-16T02:23:58+00:00"
-        },
-        {
-          "text": "ㅋㅋ",
-          "link": "https://t.me/btcbullforever/50683",
-          "ts": "2026-07-16T02:29:30+00:00"
-        },
-        {
-          "text": "저를 무작정 따라 하지 마시고, 본인의 투자 판단과 행동에 대한 책임을 다른 사람에게 전가하지 마세요.\n\n저는 트레이더입니다. DEX 생태계는 결국 누군가가 돈을 잃으면 다른 누군가는 돈을 버는 구조입니다. 이 구조와 위험성을 충분히 이해한 뒤 시장에 참여하시길 바랍니다.\n\n저는 성인군자도 아니며, 철저히 저 자신을 위해 트레이딩하고 매수와 매도를 결정합니다.\n\n지속적으로 말씀드렸듯이, 저는 제가 바라보는 내러티브와 생각을 설명할 뿐입니다. 매수와 매도를 결정할 권한도, 그 결과에 대한 책임도 전적으로 여러분 자신에게 있습니다.",
-          "link": "https://t.me/btcbullforever/50684",
-          "ts": "2026-07-16T06:40:34+00:00"
-        },
-        {
-          "text": "grok 4.5 병신인가요",
-          "link": "https://t.me/btcbullforever/50685",
-          "ts": "2026-07-16T11:42:58+00:00"
-        },
-        {
-          "text": "얘네 진짜 할일 없나;; 아직 정식 오픈도 아닌거 가지고 존나 열심히들하네",
-          "link": "https://t.me/btcbullforever/50686",
-          "ts": "2026-07-16T13:58:32+00:00"
-        },
-        {
           "text": "뭔가 근데 마곤햄이랑 이야기 나눠보니 크립토의 토큰화가 미래고.. 백팩이 좋아보이긴 하네요..",
           "link": "https://t.me/btcbullforever/50687",
           "ts": "2026-07-16T16:32:05+00:00"
@@ -1017,14 +1127,29 @@
           "text": "ㅋㅋㅋ",
           "link": "https://t.me/btcbullforever/50720",
           "ts": "2026-07-17T15:58:40+00:00"
+        },
+        {
+          "text": "fable 결국 중국모델들보고 gg치네 ㅋㅋ",
+          "link": "https://t.me/btcbullforever/50722",
+          "ts": "2026-07-18T02:41:38+00:00"
+        },
+        {
+          "text": "아옹취 졸려",
+          "link": "https://t.me/btcbullforever/50724",
+          "ts": "2026-07-18T04:53:22+00:00"
+        },
+        {
+          "text": "저녁멘ㆍ추천해주실분괌",
+          "link": "https://t.me/btcbullforever/50725",
+          "ts": "2026-07-18T04:59:17+00:00"
+        },
+        {
+          "text": "Fc lit 금지",
+          "link": "https://t.me/btcbullforever/50726",
+          "ts": "2026-07-18T05:03:42+00:00"
         }
       ],
       "MEME": [
-        {
-          "text": "투자는 반드시 본인의 판단과 책임하에 결정하시기 바랍니다.\n샀나요?, 팔았나요?와 같은 질문에는 답변하지 않습니다.\n\n저는 특정 밈을 매수하라고 설득하는 사람이 아닙니다.\n그 밈이 어떤 배경에서 만들어졌는지, 어떤 연결고리와 이야기를 가지고 있는지를 공유할 뿐입니다.\n\n제가 제공하는 정보는 하나의 관점이자 참고 자료일 뿐이며, 최종 판단은 각자의 몫입니다.\n충분히 직접 조사하고, 스스로 확신을 쌓은 뒤 기회를 쟁취하시기 바랍니다.",
-          "link": "https://t.me/Yndegen/3611",
-          "ts": "2026-07-14T07:40:31+00:00"
-        },
         {
           "text": "모든 포지션 종료했습니다",
           "link": "https://t.me/Yndegen/3614",
@@ -1252,26 +1377,6 @@
       ],
       "윤로그 공지방": [
         {
-          "text": "🔵오브스, 선물 유동성 허브 Ultra 2.0 공개\n\n오브스가 자체 선물 거래 인프라 선물 유동성 허브 Ultra 2.0을 출시\n\n이번 통합으로 기존 Orderly 기반 시스템을 대체하고, 모든 체인의 무기한 선물 거래가 Orbs Layer-3 인프라에서 직접 운영\n\n핵심은 실행부터 정산, 헤징, 청산, 가격 산정, 트레이딩 UI까지 하나의 스택으로 제공된다는 점\n\n별도 제3자 솔루션 없이도 풍부한 유동성과 CeFi 수준의 거래 경험을 지원\n\n📔Ultra 2.0 주요 특징\n- 실행·정산·헤징·청산을 하나의 인프라에서 처리\n- 출시 첫날부터 헤징 네트워크를 통한 유동성 확보\n- TEE 기반 보안 실행과 온체인 검증 지원\n- 시장가·지정가·손절·익절·브래킷 주문, 가스리스 거래 등 CeFi급 UX 제공\n\n「 출처 」\n\n✨🎉🎊🎀🎁💎",
-          "link": "https://t.me/yunlog_announcement/16653",
-          "ts": "2026-07-15T05:16:04+00:00"
-        },
-        {
-          "text": "🤖HeyElsa 한국 커뮤니티 이벤트\n\n❓HeyElsa 란\nAI 기반 크립토 코파일럿으로, 자연어 명령만으로 토큰 스왑, 브리징, 포트폴리오 관리 등 다양한 온체인 작업을 손쉽게 수행할 수 있도록 지원하는 플랫폼\n\n📔이벤트 안내\n- 기간: 7월 15일 ~ 8월 5일\n- 보상: 커피 기프티콘 (100명)\n\n✅이벤트 참여 방법\n1. HeyElsa 한국 공지방 및 채팅방 입장\n2. HeyElsa Korea / HeyElsa 공식 X 계정 팔로우\n3. 채팅방에 응원 메시지 작성\n4. 모든 미션 완료 후 구글폼 제출\n\n🎆🎇",
-          "link": "https://t.me/yunlog_announcement/16654",
-          "ts": "2026-07-15T06:07:04+00:00"
-        },
-        {
-          "text": "⚫️Talus, $US 미쳤다\n\n이번달 야핑 에어드랍 클레임 안하신분 체크👍\n\n에어드랍 클레임\n\n#Talus",
-          "link": "https://t.me/yunlog_announcement/16655",
-          "ts": "2026-07-15T07:08:54+00:00"
-        },
-        {
-          "text": "😄 THE RISE OF ROBOTS\n\n로봇은 언제 오는가.\n아니, 이미 왔는가.\n\n인류의 질문에 답하기 위해\n평의회가 소집되었습니다.\n\n이 질문에 대해 한국 커뮤니티에 가장 잘 설명할 수 있는 4명 그리고 하나의 길드가 peaq Ambassador에 선정되었습니다.\n\n7/15 부터 KBW 까지 peaq 엠베서더들과 함께하는 로보틱스 여정 그 10주간의 여정이 다음 멤버들과 시작됩니다:\n\n안건: \"왜 로보틱스인가?\"\n\n🌟 평의회 명단\n\n1) 코인같이투자 (Original Ambassador)\n1st Host & 오프닝 AMA (7/15 9:00PM)\n\n2) 라오니 (New Ambassador)\n2nd Host & AMA \n\n3) X IT 길드 (종명, 싸이버트럭, 도롱) - (New Ambassador)\n3rd Host & AMA \n\n4) 조선생 (New Ambassador)\n4th Host & 유튜브 라이브 \n\n5) MBM (New Ambassador)\n5th Host & 시크릿 커뮤니티 이벤트 \n\n🔔 Peaq 한국공지 | 한국채팅 에 조인해 \"The Rise of Robots\" 캠페인 기간동안 peaq가 발표할 초대형 생태계 및 콜라보 발표들을 확인 하세요.\n\n이 캠페인은 총 500만원 가량의 참여자들을 위한 퀴즈·AMA·이벤트 보상이 각 KOL 채널에서 제공 됩니다.",
-          "link": "https://t.me/yunlog_announcement/16656",
-          "ts": "2026-07-15T13:15:03+00:00"
-        },
-        {
           "text": "🚫오스티움 거래 일시 중단\n\n오스티움이 현재 플랫폼 내 모든 거래를 일시 중단했습니다.\n\n현재 볼트관련 이슈를 조사 중이며, 원인 확인 및 점검이 완료될 때까지 거래는 재개되지 않을 예정\n\n추가 공지가 나오는 대로 업데이트될 예정이라고 합니다\n\n출처",
           "link": "https://t.me/yunlog_announcement/16657",
           "ts": "2026-07-15T17:23:03+00:00"
@@ -1350,24 +1455,24 @@
           "text": "🟢OKX BOOST : 스테이킹 이벤트\n\n❓BOOST 스테이킹이란\n- OKX 지갑으로 스테이킹 할 수 있음\n- 스테이블 코인도 스테이킹 할 수 있고 언제든지 언스테이킹 가능\n- 보상은 자동으로 누적되고 이벤트 기간이 종료되기 전에 한꺼번에 수령할 수 있음 \n\n✅스테이킹 정보\n- 기간 : ~ 8월 8일\n- 보상 : 200,000 USDT\n- 한도 : $100,000 \n- 현재 이율 : 7.23%\n\n📔스테이킹 참여 방법\n1. OKX BOOST 접속 : LINK\n2. USDT ·  OKB 등 스테이킹\n3. 매일 이자 수령",
           "link": "https://t.me/yunlog_announcement/16672",
           "ts": "2026-07-17T13:33:11+00:00"
+        },
+        {
+          "text": "⚽️predict.fun, 스페인 VS 아르헨티나 누가 우승할까\n\n7월 20일(월) 새벽 4시, 월드컵 결승전이 열립니다.\n\npredict.fun에서 집계된 유저 예측을 보면 현재는 스페인의 우승 가능성을 더 높게 보고 있네요\n\n이번 경기가 역대급인게 2007년, 리오넬 메시가 FC 바르셀로나와 UNICEF 자선 달력 촬영에 참여했는데, 당시 생후 약 5~6개월이었던 라민 야말 가족이 행사에 참가하면서 두 사람이 함께 사진을 찍게 되었음\n\n메시가 아기 야말을 작은 욕조에서 목욕시키는 모습이 담긴 사진인데 이 아이가 커서 월드컵 결승전에서 메시랑 경기를 치르게 됨ㄷㄷ\n\n역대급 꿀잼 경기가 될 거 같은데 개인적으로는 메시를 응원하고 있습니다. 월드컵 우승으로 선수 생활의 마지막을 화려하게 장식하는 모습을 볼 수 있었으면 좋겠네요😏\n\n#predictfun",
+          "link": "https://t.me/yunlog_announcement/16673",
+          "ts": "2026-07-17T23:03:29+00:00"
+        },
+        {
+          "text": "🟢OKX BOOST : ARX 에어드랍\n\n📔에어드랍 정보\n[ 참여 & 지급 일정 ]\n- 참여 : 7월 17일 오후 7시 ~ 7월 18일 오후 7시\n- 지급 : 7월 18일 오후 9시 ~\n\n[ BOOST 보상 ] \n- 총 1,000,000 ARX\n\n[ 요구 사항 ]\n· 스냅샷 기간 : 7월 7일 ~ 7월 16일\n· 최소 잔액 $200\n· 최소 거래량 $600\n\n👍에어드랍 클레임 : 클릭",
+          "link": "https://t.me/yunlog_announcement/16675",
+          "ts": "2026-07-18T01:02:25+00:00"
+        },
+        {
+          "text": "⚫️Talus, $US 진짜 미쳤다\n\n야핑 물량 맛있게 익어가는중 😲\n\n#Talus",
+          "link": "https://t.me/yunlog_announcement/16676",
+          "ts": "2026-07-18T02:09:06+00:00"
         }
       ],
       "라오니": [
-        {
-          "text": "아니 이러면 원래 천만원만 잃을 사람들이 3천만원을 잃어야 하는거잖아?!!!",
-          "link": "https://t.me/Raoni1/21172",
-          "ts": "2026-07-16T07:13:20+00:00"
-        },
-        {
-          "text": "단주거래 안되고 20주씩 거래가능.\n\n근데 이게 의미가 있냐고~!!!",
-          "link": "https://t.me/Raoni1/21173",
-          "ts": "2026-07-16T07:16:41+00:00"
-        },
-        {
-          "text": "레버리지 신규상품 출시불가 \n\n아니라 신규상품 출시불가구나...\n기존 있는건 될듯...",
-          "link": "https://t.me/Raoni1/21174",
-          "ts": "2026-07-16T07:17:46+00:00"
-        },
         {
           "text": "근데 11월부터 시행이면,\n\n그전에 이미 전부 다죽을꺼라 크게 의미는 없는듯.\n그냥 시간이 다 해결해줄꺼라 생각함.\n\n몇달만 지나면 레버리지 etf 전원 손실로 바뀌어서, 결국 해본사람들의 학습으로 알아서 안하게 될듯.\n\n원래 쳐 맞으면 다 배우게 된다.",
           "link": "https://t.me/Raoni1/21175",
@@ -1452,34 +1557,24 @@
           "text": "StablePay 정식 출시 소식\n\nStable의 결제 앱 StablePay가 정식 출시됐습니다. USDT를 전 세계 어디든 즉시·수수료 없이 보낼수 있음.\n\n• 전화번호·이메일·QR로 송금 : 지갑 주소 몰라도 됨\n• 지갑·가스비·체인 선택 같은 복잡한 과정 제거\n• 남는 USDT를 앱 안에서 굴리는 Earn 기능 내장\n\n기존 크립토 결제는 받는 건 빨라도 쓰려면 번거로웠던 게 약점. StablePay는 그 경험을 일반 결제앱 수준으로 끌어내림\n\nStablePay 다운로드 \n#kol",
           "link": "https://t.me/Raoni1/21191",
           "ts": "2026-07-17T11:41:57+00:00"
+        },
+        {
+          "text": "주말의 하닉 172쯤",
+          "link": "https://t.me/Raoni1/21192",
+          "ts": "2026-07-18T01:35:34+00:00"
+        },
+        {
+          "text": "오랜만에 비트코인 차트를 보니까...\n\n이거 개 안전자산이잖아?!!!!\n다시 코인슬슬 할 준비나 해볼까요....",
+          "link": "https://t.me/Raoni1/21193",
+          "ts": "2026-07-18T02:52:30+00:00"
+        },
+        {
+          "text": "주말은 역시 와퍼....",
+          "link": "https://t.me/Raoni1/21194",
+          "ts": "2026-07-18T04:56:02+00:00"
         }
       ],
       "종명이의 딸깍": [
-        {
-          "text": "WEF가 주목한 NHS의 의료 AI 혁신: FLock의 협업 사례\n\n세계경제포럼(WEF)의 MINDS 프로그램이 영국 국민보건서비스(NHS) 산하 병원들과 AI 스타트업 FLock의 연합학습(Federated Learning) 협업 사례를 집중 조명. FLock을 환자의 민감한 의료 데이터를 외부로 유출하지 않고도 안전하게 AI를 학습시키는 혁신적인 모델로 평가함.\n\n주요 적용 사례\nUCLH (런던 대학 병원) - 당뇨병 혈당 예측\n• 400명 이상의 환자 데이터를 기반으로 혈당 위험을 예측하는 AI 경고 시스템 개발.\n• 환자 데이터의 외부 유출 없이 영국, 유럽, 미국, 중국 연구진과 공동 학습 진행.\n• 이 기술을 통해 당뇨병 관리 예산의 단 1%만 절감해도 NHS는 연간 1억 파운드(약 1,700억 원) 이상의 예산을 절약할 수 있을 것으로 기대\n\nMoorfields 안과 병원 - 안구 질환 탐지\n• 안과 이미지 데이터를 활용해 고성능 질환 탐지 AI 모델 구축 중.\n• 개인정보 유출 우려 없이 여러 NHS 병원들이 안전하게 이미지 데이터를 공동 학습에 활용할 수 있도록 지원.\n• NHS의 단일 지불자 시스템과 일관된 데이터 관리 체계는 다른 시장으로 확장하기 전에 연합 학습의 효과를 대규모로 입증하기에 이상적인 환경을 제공\n\nhttps://healthcare-in-europe.com/en/news/nhs-ai-world-economic-forum-flock-io.html",
-          "link": "https://t.me/jh_6598/8941",
-          "ts": "2026-07-15T13:04:28+00:00"
-        },
-        {
-          "text": "Pharos, Axil Prime Credit Vault 퍼블릭 예치 (#앰버서더)\n\n✅ 참여방법\n- OKX Wallet, Binance Wallet, KuCoin Wallet 또는 TopNod Wallet을 사용해 Pharos Mainnet에서 USDC를 예치하고 참여할 수 있음\n\n✅ Vault 주요 정보\n- 참여 기간 : 7월15일 ~ 7월19일\n- 볼트 운영기간 : 3개월 (7월20일 ~ 10월19일, 3개월)\n- 목표 수익률 : 연 14%+ APY (USDC 수익률 3.3% + $PROS 보상 10.7%)\n(*하드캡 $100M, Axil 운용, R25Official 인프라 기반)\n\n👉 AxilPrimeCredit-3M Vault 페이지\n👉 관련 트윗",
-          "link": "https://t.me/jh_6598/8942",
-          "ts": "2026-07-15T13:18:30+00:00"
-        },
-        {
-          "text": "Ostium 볼트 익스플로잇\n\nhttps://x.com/blockaid_/status/2077405527428989363",
-          "link": "https://t.me/jh_6598/8943",
-          "ts": "2026-07-15T14:59:27+00:00"
-        },
-        {
-          "text": "혹시 오스티움 + 수익이신분은 빨리 거래 정리하고 정산하세요.\n\n볼트에서 수익, 손실 카운터파티 해주는거라 포지션 정리해야함. \n\n나중가면 정산 안해줄지도.",
-          "link": "https://t.me/jh_6598/8944",
-          "ts": "2026-07-15T15:02:47+00:00"
-        },
-        {
-          "text": "[wintermute] 암호화폐 분야에서 더 이상 만들어낼 것이 남아 있을까요?\n\n암호화폐 분야에 더 이상 만들 것이 없는가?\n• 과거의 의문: 그동안 암호화폐 업계의 핵심 과제는 L1/L2 체인 구축, DeFi 성숙, 스테이블코인 도입 등 '인프라가 제대로 작동할 것인가'였습니다.\n\n• 현재의 진단: 이제 인프라는 충분히 완성되었고 작동하고 있습니다. \"무엇을 더 만들 것인가\"라는 질문은 방향이 잘못되었습니다.\n\n• 새로운 질문: 진정으로 던져야 할 질문은 \"세상은 왜 암호화폐를 필요로 하는가?\"이며, 윈터뮤트가 생각하는 답은 Machine Economy 입니다.\n\n경제 주체로서의 기계 (Machine Economy)\n• 현재 AI 모델과 로봇공학은 인간이 지시하는 도구를 넘어, 스스로 판단하고 거래하는 자율적 경제 행위자(Agent)로 진화하고 있습니다.\n\n• 예시: 스스로 항공편을 예약·결제·환불하는 여행 에이전트, 스스로 수익을 내고 배터리 충전 및 컴퓨팅 비용을 지불하는 창고 로봇, 인간 없이 실험을 설계하고 시약을 주문하는 연구 시스템.\n\n• 기존 금융의 한계: 현재의 KYC, 결제, 분쟁 해결 시스템은 상대방이 인간이나 법인이라는 전제하에 설계되어 있어 자율 기계의 속도를 감당할 수 없습니다.\n\n• 암호화폐의 역할: Permissionless, 프로그래머블하며, 감사 가능한 온체인 기록을 가진 암호화폐 기반 시스템이 기계 경제에 훨씬 더 적합합니다.\n\n기계 경제의 현재 한계 및 실패 사례\n• 2026년 5월, 모스 부호를 이용한 프롬프트 인젝션 공격으로 Grok이 송금 명령을 실행하여 약 15~20만 달러 규모의 자산이 탈취당하는 사건 발생.\n• 2026년 2월, AI가 지원한 스마트 계약 코드의 오라클 버그로 인해 Moonwell에서 178만 달러의 부실 채권이 발생했으나 검증 과정에서 아무도 이를 잡아내지 못함.\n\nWintermute 관심 분야\n• 기초 모델이나 하드웨어 자체보다는 기계 간의 거래, 조정, 신뢰를 연결하는 인프라 레이어\n\n• 에이전트를 위한 경제적 레이어: 에이전트가 잘못 행동했을 때의 권한 관리, 사기 위험 분산, 에이전트 전용 인증 및 신원 확인, 자체 컴퓨팅/데이터 구매 시장 등.\n\n• 물리적 AI (Physical AI): 가정용 휴머노이드보다는 이미 경제성이 확보되고 실제 적용 사례가 존재하는 구조화된 환경(창고, 물류, 소매점 후방)에서 로봇이 자체적으로 비용을 지불하고 대가를 받을 수 있는 금융 기반 구축.\n\n• 머신 주도 발견 (Machine driven Discovery): 재료 과학 및 신약 개발 분야를 위한 실험실 자율성 소프트웨어와 양자 컴퓨팅 보안 결제 레이어.\n\nR[3]sidency x Construct 액셀러레이터 프로그램 (지원링크)\n• Wintermute는 Fabric Ventures, Solana, Coinbase 등과 손잡고 이러한 기계 경제(암호화폐 + AI + 로봇공학 + 양자공학) 인프라를 구축할 창업가를 모집하고 있습니다.\n\n• 지원 혜택: 팀당 300K 달러 투자, 런던에서 12주간 진행, 30명 이상의 멘토링, 런던/뉴욕 데모 데이 제공.\n\nhttps://x.com/wintermute_t/status/2077395703689515387",
-          "link": "https://t.me/jh_6598/8945",
-          "ts": "2026-07-16T01:32:28+00:00"
-        },
         {
           "text": "Cascade 근황 (비관적)\n\n팀은 여전히 완전히 침묵중\n방금 볼트에서 큰 돈이 빠져나온 후 DAI로 스왑\n\n자세한 내용은 궈니님의 포스팅 참고\nhttps://x.com/0xGwoni/status/2077569101413974512",
           "link": "https://t.me/jh_6598/8946",
@@ -1644,6 +1739,26 @@
           "text": "종명이의 딸깍 pinned a photo",
           "link": "https://t.me/jh_6598/8980",
           "ts": "2026-07-17T15:57:08+00:00"
+        },
+        {
+          "text": "Nous Research, NVIDIA AI, Stripe가 함께 주최한 Accelerated Business Hackathon의 최종 우승작\n\n1위: Custodian (개발자: Daniel LaForce)\n• AI 에이전트가 실제 돈을 지출할 때 안전하게 통제할 수 있는 Governance Kernel 시스템.\n• AI 모델이 특정 지출이나 행동을 제안하면, 외부 커널이 이를 검토하고 승인해야만 실제 결제가 실행. \n• 모든 단계가 커널의 통제를 받으며, 출력물은 SHA-256으로 해싱되어 보안성을 높였음. \n• 에이전트의 자율적인 비용 집행 과정에서 발생할 수 있는 리스크를 방지하는 안전장치 역할을 합니다.\n\n2위: Mom-n-Pop Skills (개발자: Scott Hewitson)\n•  기술에 익숙하지 않은 소상공인(부모님)을 위해 개발된 종합 비즈니스 관리 에이전트.\n• CRM이나 디지털 도구 없이 수작업으로 서류를 처리하던 60대 부모님을 위해 개발. \n• 텔레그램 인터페이스를 통해 대화하는 것만으로 업무 견적서 작성, Stripe 결제 링크 생성, 이메일 확인 및 회신, 재무 분석, 마케팅 캠페인 기획 등을 처리. \n• 심지어 에이전트가 자체 신용카드로 필요한 소프트웨어를 직접 구매할 수도 있음.\n\n3위: CashFromChaos (개발자: David Diaz)\n• 판매하려는 물건의 사진 한 장과 간단한 설명만으로 전체 판매 과정을 완전 자동화하는 중고 거래 에이전트.\n• 사용자가 물건 사진과 한 줄짜리 단서를 던져주면, 에이전트가 아이템을 식별하고 적절한 판매 채널을 선택. \n• 이후 구매 희망자와 가이드라인 내에서 가격을 협상하고, Stripe을 통해 결제 대금을 예치한 뒤, 배송이 완료되면 정산까지 끝내는 엔드투엔드 판매 자동화 시스템.\n\nhttps://x.com/NousResearch/status/2077517414464410091",
+          "link": "https://t.me/jh_6598/8981",
+          "ts": "2026-07-17T23:21:04+00:00"
+        },
+        {
+          "text": "Pluralis 팀도 한국에 오는걸로 알고 있고 곧 70페이지 짜리 페이퍼 공개",
+          "link": "https://t.me/jh_6598/8982",
+          "ts": "2026-07-18T01:37:00+00:00"
+        },
+        {
+          "text": "[개인적인 공유] 요즘 새로 시도해보고 있는것\n\n이전에도 글을 한두번 정도 공유하긴 했는데, AI나 휴머노이드, 기술적인 발전에 관련된 이슈 그리고 거기에 제 생각을 붙여 글을 작성하고 작성한 글을 기반으로 이미지를 생성해 인스타그램을 만들어 나가보고 있습니다. 또하나의 브랜드 에셋을 만든다는 느낌으로.\n\n예전에는 괜찮은 이미지도 찾고 또 피그마로 수정하고 이런 작업들이 번거롭기도하고 퀄리티가 잘 안나와서 시도만 해보려다 번번히 포기하곤 했는데 이제는 너무 이미지 만들기가 편하더라구요.\n\n텔레그램에서 글쓰는것도 너무 즐겁지만 약간은 휘발성이 강하다보니 꽤 괜찮은 공유하고 싶은 글들은 조금 더 영구성이 있는 플랫폼에 저장하면 좋을것 같아서 인스타그램을 선택하게 되었습니다!\n\n좋은주말 보내시구, 잠깐 시간텀이 있을때 한번 읽어도 봐주시고 괜찮다고 생각되시면 팔로우나 좋아요 남겨주시면 너무 감사할 것 같네요!\n\n거의미래 인스타그램 구경가기",
+          "link": "https://t.me/jh_6598/8983",
+          "ts": "2026-07-18T03:16:26+00:00"
+        },
+        {
+          "text": "DefiLlama는 실제 DeFi에서 활용되는 Active TVL을 프로토콜·체인별로 분석하는 신규 기능을 RWA 페이지에 추가\n\n온체인 RWA 총액이 $29B를 넘었지만 안전성 목적으로 유휴상태인 경우가 많고, 실제로 어디에 사용하고 있는지 파악하기 어려움. \n\n이번 기능도입을 통해 RWA 총액이 아닌 실질 배포·활용 규모를 쉽게 파악가능하게 될 것.\n\nhttps://x.com/DefiLlama/status/2078239067959885908",
+          "link": "https://t.me/jh_6598/8985",
+          "ts": "2026-07-18T03:22:21+00:00"
         }
       ],
       "마인부우의 크립토볼": [
@@ -1730,41 +1845,6 @@
       ],
       "싸이버트럭": [
         {
-          "text": "녹사 파운더는 가만히 있고 온갖 녹사의 친구들이 추측인지 카더라인지 얘기를 쏟아내고 있는데  저는 일단은 좀 더 지켜보겠습니다, 이대로 죽기엔 너무 아쉬운 하잎이고  설령 녹사가 어찌 되더라도 잠깐의 악재로 지나가고 근본은 안사라졌으니 갈길 가주길 바라며~  라고 하는데 음봉꽂는 캐시캣 훠훠",
-          "link": "https://t.me/cybertruck666/13406",
-          "ts": "2026-07-14T16:05:07+00:00"
-        },
-        {
-          "text": "이번 소식을 도저히 호재로 해석하기 어렵습니다.\n\n개인적으로는 우선 체인에서 자금을 회수하고 한동안 거리를 둔 뒤, 추후 다른 플랫폼이 안정적으로 자리 잡고 생태계가 다시 활성화되는 것을 확인한 후에 진입할 생각입니다.\n\n저는 Noxa가 사실상 사업을 접는다는 내용을 확인한 뒤 모든 포지션을 종료했습니다.\n\n물론 사람마다 해석은 다를 수 있습니다. 다만 신규 발행이 중단되면서 기존 토큰의 희소성이 높아지니 오히려 호재가 아니냐는 의견에는 개인적으로 동의하기 어렵습니다.\n\n저는 희소성보다 생태계에 대한 신뢰와 지속 가능성이 더 중요하다고 생각합니다. 개발팀이 이런 방식으로 기존에 쌓아온 가치와 여러 기반을 내려놓고, 플랫폼을 사실상 아카이브 형태로만 운영하겠다는 것이 저에게는 좋은 소식으로 보이지 않습니다.",
-          "link": "https://t.me/cybertruck666/13407",
-          "ts": "2026-07-14T16:05:22+00:00"
-        },
-        {
-          "text": "캐시캣 등 배출한 NOXA 150억 빨고 사업 종료\n\n가격은 그냥 지옥가버림\n\n인도 데브한테 외주 맡기고 이곳저곳 체인 옮기면서 후다닥 런칭하며 다녔는데 갑자기 로빈후드에 간택돼서 일확천금 얻었는데 팀끼리 내분이 생긴건지 수수료는 0%로 전환\n\n본토큰 존재하고 흥한 체인 내에서 괜찮은 입지 가지고있었고 팀이 통수만 안치면 나름 괜찮은 플레이라고 생각했는데 엔딩이 매우 아쉽네요. 자연해재 다이\n\nhttps://x.com/Noxa_Fi/status/2077054908944076825",
-          "link": "https://t.me/cybertruck666/13408",
-          "ts": "2026-07-14T16:13:34+00:00"
-        },
-        {
-          "text": "$MARIAN 도 다시 ATH 달성했네요 로빈후드...야맙...다....",
-          "link": "https://t.me/cybertruck666/13409",
-          "ts": "2026-07-15T04:59:33+00:00"
-        },
-        {
-          "text": "로빈후드 Noxa 플랫폼 중단 이후 Ponds가 뜨길래 해당 플랫폼 내 토큰을 살펴봤는데 Noxa와는 다르게 로빈후드 스캐너에 코드도 인증 잘해놓고, 별 문제가 없어 보이네요\n\n지금 Ponds 플랫폼에서 런칭한 Brodie같은 토큰을 유니스왑에서 구매하려고 할 경우 악성 토큰 경고 창이 뜨는데 코드 확인 결과 큰 문제는 없는 것 같습니다\n\n토큰 전송 시 호출되는 _update()라는 함수에서 토큰 세일 시 스나이핑 방지를 위한 코드가 들어가 있어 이 부분이 잘못 탐지가 된 것 같아요 \n\nhttps://robinhoodchain.blockscout.com/token/0x45F82AC5d507e988f7406935da8eEfe495a360e0?tab=contract",
-          "link": "https://t.me/cybertruck666/13410",
-          "ts": "2026-07-15T05:10:11+00:00"
-        },
-        {
-          "text": "💃💃💃Ritual X 싸이버트럭 PloPlo NFT 화이트리스트 이벤트💃💃💃  🤪🤪🤪🤪🤪  PloPlo는 Ritual 생태계의 메인 NFT로 밀어주고 있는 느낌이라, 기회가 되신다면 들여다 보시면 좋겠습니다.  참여 방법 - 리츄얼 , 리츄얼 한국, PloPlo 팔로우 - 구글폼 작성  PloPlo NFT 정보  - Supply: 5,555 - Mint Price: 0.1 ETH - Chain: Ethereum - Mint Date: July 22 - Ritual…",
-          "link": "https://t.me/cybertruck666/13411",
-          "ts": "2026-07-15T05:48:15+00:00"
-        },
-        {
-          "text": "😄 THE RISE OF ROBOTS\n\n로봇은 언제 오는가.\n아니, 이미 왔는가.\n\n인류의 질문에 답하기 위해\n평의회가 소집되었습니다.\n\n이 질문에 대해 한국 커뮤니티에 가장 잘 설명할 수 있는 4명 그리고 하나의 길드가 peaq Ambassador에 선정되었습니다.\n\n7/15 부터 KBW 까지 peaq 엠베서더들과 함께하는 로보틱스 여정 그 10주간의 여정이 다음 멤버들과 시작됩니다:\n\n안건: \"왜 로보틱스인가?\"\n\n🌟 평의회 명단\n\n1) 코인같이투자 (Original Ambassador)\n1st Host & 오프닝 AMA (7/15 9:00PM)\n\n2) 라오니 (New Ambassador)\n2nd Host & AMA \n\n3) X IT 길드 (종명, 싸이버트럭, 도롱) - (New Ambassador)\n3rd Host & AMA \n\n4) 조선생 (New Ambassador)\n4th Host & 유튜브 라이브 \n\n5) MBM (New Ambassador)\n5th Host & 시크릿 커뮤니티 이벤트 \n\n🔔 Peaq 한국공지 | 한국채팅 에 조인해 \"The Rise of Robots\" 캠페인 기간동안 peaq가 발표할 초대형 생태계 및 콜라보 발표들을 확인 하세요.\n\n이 캠페인은 총 500만원 가량의 참여자들을 위한 퀴즈·AMA·이벤트 보상이 각 KOL 채널에서 제공 됩니다.",
-          "link": "https://t.me/cybertruck666/13412",
-          "ts": "2026-07-15T09:20:03+00:00"
-        },
-        {
           "text": "일당이 아니라 월급짜리였노",
           "link": "https://t.me/cybertruck666/13413",
           "ts": "2026-07-15T09:21:01+00:00"
@@ -1818,6 +1898,41 @@
           "text": "noxa랑 로빈후드체인 줏망길타버린 이유에 대한 글인데 지금까지 읽은글 중에선 가장 그럴듯한거같기도하네\n\n결국 슈빠 스나이퍼형들이 들어오면서 디도스공격도하고 여러가지 어택을 강행해버려서 줏망하게되엇다 뭐이런 뉘앙스\n\n안그래도 블라드펀 만든애가 어제 자신을 공격하는 세력이있다는 트윗을 올렸는데 그거랑도 이어지는듯\n\nhttps://x.com/promint_x/status/2077809720790839371?s=46&t=A13aYo_HW6PsKqb8hj3lLg",
           "link": "https://t.me/cybertruck666/13425",
           "ts": "2026-07-16T23:56:18+00:00"
+        },
+        {
+          "text": "블라드 트윗으로 돈냥이 밀어버려 빔\n\nhttps://x.com/vladtenev/status/2078250427741556805?s=46&t=KfAv5qDWGMwT9BID9wkpuQ",
+          "link": "https://t.me/cybertruck666/13426",
+          "ts": "2026-07-17T22:50:18+00:00"
+        },
+        {
+          "text": "블라드 트윗으로 돈냥이 밀어버려 빔  https://x.com/vladtenev/status/2078250427741556805?s=46&t=KfAv5qDWGMwT9BID9wkpuQ",
+          "link": "https://t.me/cybertruck666/13427",
+          "ts": "2026-07-17T22:54:14+00:00"
+        },
+        {
+          "text": "일당은 반드시 해야만 해....  크라임 vㅔ리 굿  연휴 잘 보내시고 저는 호프 보러 갑니다 노잼이라는데 일단 똥인지 된장인지 내가 먹어봐야겠다!",
+          "link": "https://t.me/cybertruck666/13428",
+          "ts": "2026-07-17T23:18:56+00:00"
+        },
+        {
+          "text": "절대 베이스를 믿지마",
+          "link": "https://t.me/cybertruck666/13429",
+          "ts": "2026-07-18T01:48:52+00:00"
+        },
+        {
+          "text": "BASE에서 인물 밈코를 믿는거는 정신병이다",
+          "link": "https://t.me/cybertruck666/13430",
+          "ts": "2026-07-18T01:52:42+00:00"
+        },
+        {
+          "text": "ㅋㅋㅋ빡빡이 프사 내림 역시 감없는 새끼들",
+          "link": "https://t.me/cybertruck666/13431",
+          "ts": "2026-07-18T01:55:13+00:00"
+        },
+        {
+          "text": "RISE X의 Final Call 마무리\n\nRiseX의 Final call이 마무리 되었습니다\n\n총 지갑수 : 3,429\n총 볼륨 : $906,565,118\n총 OI : 9,038,590\n\nFinal call 이 끝난 직후 다가오는 Point season 1\n7월 20일 09:00(kst)\n7월 20일 09:00(kst)\n7월 20일 09:00(kst)\n포인트 시즌 이전에 한 것들도 모두 소급 적용된다고 하네요 참고 하시면 좋을 것 같습니다\n\nRISEX 참여하기\n\n022D4YYP / 033NT4WG / 03NWSE4C / 0AXEGYMK / 0J3RE9FQ / 0J44QHP5\n#KOL",
+          "link": "https://t.me/cybertruck666/13432",
+          "ts": "2026-07-18T02:02:40+00:00"
         }
       ],
       "DeFi 농부 조선생": [
@@ -1919,26 +2034,6 @@
       ],
       "MBM Crypto Insider": [
         {
-          "text": "매장 오픈 준비하느라 바쁘다 바빠",
-          "link": "https://t.me/MBMweb3/43608",
-          "ts": "2026-07-15T07:06:17+00:00"
-        },
-        {
-          "text": "😄 THE RISE OF ROBOTS\n\n로봇은 언제 오는가.\n아니, 이미 왔는가.\n\n인류의 질문에 답하기 위해\n평의회가 소집되었습니다.\n\n이 질문에 대해 한국 커뮤니티에 가장 잘 설명할 수 있는 4명 그리고 하나의 길드가 peaq Ambassador에 선정되었습니다.\n\n7/15 부터 KBW 까지 peaq 엠베서더들과 함께하는 로보틱스 여정 그 10주간의 여정이 다음 멤버들과 시작됩니다:\n\n안건: \"왜 로보틱스인가?\"\n\n🌟 평의회 명단\n\n1) 코인같이투자 (Original Ambassador)\n1st Host & 오프닝 AMA (7/15 9:00PM)\n\n2) 라오니 (New Ambassador)\n2nd Host & AMA \n\n3) X IT 길드 (종명, 싸이버트럭, 도롱) - (New Ambassador)\n3rd Host & AMA \n\n4) 조선생 (New Ambassador)\n4th Host & 유튜브 라이브 \n\n5) MBM (New Ambassador)\n5th Host & 시크릿 커뮤니티 이벤트 \n\n🔔 Peaq 한국공지 | 한국채팅 에 조인해 \"The Rise of Robots\" 캠페인 기간동안 peaq가 발표할 초대형 생태계 및 콜라보 발표들을 확인 하세요.\n\n이 캠페인은 총 500만원 가량의 참여자들을 위한 퀴즈·AMA·이벤트 보상이 각 KOL 채널에서 제공 됩니다.",
-          "link": "https://t.me/MBMweb3/43609",
-          "ts": "2026-07-15T11:17:26+00:00"
-        },
-        {
-          "text": "✅매장 디자인 최종 완료\n\n7월 20일부터 인테리어 시작하고, 8월 초 오픈 예정입니다.\n\n위치는 왕십리 한양대 먹자골목, 오픈하면 많이 놀러 와주세요",
-          "link": "https://t.me/MBMweb3/43610",
-          "ts": "2026-07-15T15:57:19+00:00"
-        },
-        {
-          "text": "엠모닝 오늘도 화이팅 !!",
-          "link": "https://t.me/MBMweb3/43614",
-          "ts": "2026-07-16T01:18:19+00:00"
-        },
-        {
           "text": "➡️StablePay 정식 출시\n\nStable에서 StablePay를 출시했습니다.한마디로 USDT를 일반 송금 앱처럼 쉽게 보내는 앱이라고 보면 될 것 같네요.\n\n🟠 주요 기능\n- 전 세계 USDT 즉시 송금\n- 수수료 무료\n- 전화번호·이메일·QR로 송금\n- 체인, 가스비, 지갑 주소 신경 쓸 필요 최소화\n- 남는 USDT는 Earn으로 운용 가능\n\n스테이블코인은 보내는 건 쉬워졌는데, 아직도 체인이나 가스비 때문에 일반 유저들이 쓰기엔 불편한 부분이 있었죠.Stable은 이런 과정을 최대한 숨기고 카카오페이처럼 쉽게 쓰는 경험을 만드는 방향으로 가는 것 같습니다.\n\n🔗 StablePay 다운로드",
           "link": "https://t.me/MBMweb3/43615",
           "ts": "2026-07-16T02:11:48+00:00"
@@ -1987,6 +2082,26 @@
           "text": "오늘 새벽부터 장마 시작인가",
           "link": "https://t.me/MBMweb3/43627",
           "ts": "2026-07-17T10:19:31+00:00"
+        },
+        {
+          "text": "엠모닝~🪙",
+          "link": "https://t.me/MBMweb3/43628",
+          "ts": "2026-07-18T01:36:00+00:00"
+        },
+        {
+          "text": "잉어킹 어디까지 올라가는거에요",
+          "link": "https://t.me/MBMweb3/43629",
+          "ts": "2026-07-18T02:39:59+00:00"
+        },
+        {
+          "text": "🔵드디어 인테리어 일정 확정!\n\n7월 22일부터 30평 규모 매장 공사를 시작합니다\n\n위치는 왕십리 한양대 먹자골목 부근이며, 열심히 준비해서 좋은 공간으로 찾아뵙겠습니다. 많은 관심 부탁드립니다",
+          "link": "https://t.me/MBMweb3/43635",
+          "ts": "2026-07-18T04:37:32+00:00"
+        },
+        {
+          "text": "매장 오픈 티저 영상 제작 가능하신 분 찾습니다\n\n능력자분 DM 주세요",
+          "link": "https://t.me/MBMweb3/43639",
+          "ts": "2026-07-18T05:29:22+00:00"
         }
       ]
     }
@@ -1994,24 +2109,6 @@
   "meme_mentions": {
     "status": "ok",
     "tickers": [
-      {
-        "address": "0x45F82AC5d507e988f7406935da8eEfe495a360e0",
-        "mentions": 2,
-        "sample_text": "로빈후드 Noxa 플랫폼 중단 이후 Pons가 뜨길래 해당 플랫폼 내 토큰을 살펴봤는데 Noxa와는 다르게 로빈후드 스캐너에 코드도 인증 잘해놓고, 별 문제가 없어 보이네요\n\n지금 Pons 플랫폼에서 런칭한 Brodie같은 토큰을 유니스왑에서 구매하려고 할 경우 악성 토큰 경고 창이 뜨는데 코드 확인 결과 큰 문제는 없는 것 같습니다\n\n토큰 전송 시 호출되",
-        "sample_link": "https://t.me/minebuu_cryptoball/4898"
-      },
-      {
-        "address": "0x16cdda08407da70c24dea96cf95d8168dbc1704d",
-        "mentions": 1,
-        "sample_text": "오스티움 공격자는 한시간 전 쯤부터 토네이도캐시로 세탁 시작. 돌려받기는 글른 것 같네요.\n\nhttps://arbiscan.io/address/0x16cdda08407da70c24dea96cf95d8168dbc1704d",
-        "sample_link": "https://t.me/fireant_crypto/42872"
-      },
-      {
-        "address": "0xad29f2723fcdbcf665f210f25e06f97477e417cf",
-        "mentions": 1,
-        "sample_text": "GRVT 토큰 뜬듯  https://etherscan.io/token/0xad29f2723fcdbcf665f210f25e06f97477e417cf#balances  일단 BNB 체인과의 브리지는 웜홀 BNB 체인 가서 뭐하실까요?!",
-        "sample_link": "https://t.me/pgyinfo/14246"
-      },
       {
         "address": "0x237609918f330add285b8bc5f8f2922283d1c4c5",
         "mentions": 1,
@@ -2025,16 +2122,22 @@
         "sample_link": "https://t.me/PowsGemCalls/45939"
       },
       {
+        "address": "0x4fbEde53b59D1a2Ab85F785ad76E1dcD66A1546A",
+        "mentions": 1,
+        "sample_text": "로빈후드에 나온 앱스 빅코인 비스무리한 무언가 \n\n초기 진입은 돈이 될수도..? 익숙한 폰지의 그맛 \n\nhttps://unhing3d.xyz?ref=0x4fbEde53b59D1a2Ab85F785ad76E1dcD66A1546A\n\nCA: 0x470B0859Ebf4F9c8927873144f06c3cF8A92c7a0\n\nEly 트윗에서 발견했어요",
+        "sample_link": "https://t.me/minebuu_cryptoball/4892"
+      },
+      {
         "address": "0x470B0859Ebf4F9c8927873144f06c3cF8A92c7a0",
         "mentions": 1,
         "sample_text": "로빈후드에 나온 앱스 빅코인 비스무리한 무언가 \n\n초기 진입은 돈이 될수도..? 익숙한 폰지의 그맛 \n\nhttps://unhing3d.xyz?ref=0x4fbEde53b59D1a2Ab85F785ad76E1dcD66A1546A\n\nCA: 0x470B0859Ebf4F9c8927873144f06c3cF8A92c7a0\n\nEly 트윗에서 발견했어요",
         "sample_link": "https://t.me/minebuu_cryptoball/4892"
       },
       {
-        "address": "0x4fbEde53b59D1a2Ab85F785ad76E1dcD66A1546A",
+        "address": "0x45F82AC5d507e988f7406935da8eEfe495a360e0",
         "mentions": 1,
-        "sample_text": "로빈후드에 나온 앱스 빅코인 비스무리한 무언가 \n\n초기 진입은 돈이 될수도..? 익숙한 폰지의 그맛 \n\nhttps://unhing3d.xyz?ref=0x4fbEde53b59D1a2Ab85F785ad76E1dcD66A1546A\n\nCA: 0x470B0859Ebf4F9c8927873144f06c3cF8A92c7a0\n\nEly 트윗에서 발견했어요",
-        "sample_link": "https://t.me/minebuu_cryptoball/4892"
+        "sample_text": "로빈후드 Noxa 플랫폼 중단 이후 Pons가 뜨길래 해당 플랫폼 내 토큰을 살펴봤는데 Noxa와는 다르게 로빈후드 스캐너에 코드도 인증 잘해놓고, 별 문제가 없어 보이네요\n\n지금 Pons 플랫폼에서 런칭한 Brodie같은 토큰을 유니스왑에서 구매하려고 할 경우 악성 토큰 경고 창이 뜨는데 코드 확인 결과 큰 문제는 없는 것 같습니다\n\n토큰 전송 시 호출되",
+        "sample_link": "https://t.me/minebuu_cryptoball/4898"
       }
     ]
   },
@@ -2045,7 +2148,7 @@
         "word": "가능",
         "count": 49,
         "trend": "rising",
-        "score": 800.33,
+        "score": 92.35,
         "evidence": [
           {
             "type": "telegram",
@@ -2065,125 +2168,10 @@
         ]
       },
       {
-        "word": "거래",
-        "count": 47,
-        "trend": "rising",
-        "score": 736.33,
-        "evidence": [
-          {
-            "type": "telegram",
-            "text": "📌 불개미 일일시황 | 2026.07.16 (목)\n\n1️⃣ BTC ETH 유출입\n• BTC: +$107.7M\n• ETH: +$53.9M\n• ETF 데이터는 마지막 거래일 기준\n\n2️⃣ 미결제약정 추이 (24시간 기준)\n• BTC 24시간: -2.97%\n• ETH 24시간: -1.60%\n\n3️⃣ DAT 추이\n• WEEKLY NET INFLOW: $-85.45",
-            "link": "https://t.me/fireant_crypto/42871"
-          },
-          {
-            "type": "telegram",
-            "text": "빗썸(Bithumb) 공지\n아지트(AZIT), 쿠디스(CUDIS), 팬시(FANC), 템코(TEMCO), 네스트리(EGG), 스탯(STAT) 거래유의종목 지정 \n2026-07-16 16:00:01",
-            "link": "https://t.me/fireant_crypto/42876"
-          },
-          {
-            "type": "telegram",
-            "text": "코인원(Coinone) 공지\n거래유의 종목 지정 안내: 스트리머(DATA2) 외 11종 \n2026-07-16 16:00:11",
-            "link": "https://t.me/fireant_crypto/42877"
-          }
-        ]
-      },
-      {
-        "word": "발표",
-        "count": 26,
-        "trend": "rising",
-        "score": 676.0,
-        "evidence": [
-          {
-            "type": "telegram",
-            "text": "🇰🇷 정부부처, 오늘 16시에 긴급 삼전닉스 레버리지 ETF 에 대한 보완책 발표 예정\n\n얼마 전 이재명 대통령이 보완책을 강구하라는 말이 있었는데, 바로 오늘 4시에 보완대책을 발표한다고 합니다. 3시부터 시장상황점검회의를 열어 4시에 논의 결과를 발표할 예정이라고 합니다. 장이 끝난 후니 변동성에 주의하시기 바랍니다.\n\n#KOSPI #국장",
-            "link": "https://t.me/enjoymyhobby/96697"
-          },
-          {
-            "type": "telegram",
-            "text": "[PerpDEX] GRVT\n\nGRVT가 7월 30일 LIVE 예정이라고 공식 발표했습니다.\n\n출처 · ☆ 10/10",
-            "link": "https://t.me/pgyinfo/14257"
-          },
-          {
-            "type": "telegram",
-            "text": "[PerpDEX] GRVT  GRVT가 7월 30일 LIVE 예정이라고 공식 발표했습니다.  출처 · ☆ 10/10",
-            "link": "https://t.me/pgyinfo/14258"
-          }
-        ]
-      },
-      {
-        "word": "시작",
-        "count": 25,
-        "trend": "rising",
-        "score": 625.0,
-        "evidence": [
-          {
-            "type": "telegram",
-            "text": "PloPlo WL 놓친 사람들을 위한 추가 신청\n\n기존 WL 배정은 모두 마감됐는데, 이번에 ET-Friends-001 WL을 추가로 받을 수 있는 신청이 열림\n\nPloPlo Discord의 Pioneer Ab 역할이나 Ritual Discord의 Ritualist, Ritty, Radiant Ritualist 역할을 보유한 사람, 공식 Quest 완료자도",
-            "link": "https://t.me/justdegenguy/4099"
-          },
-          {
-            "type": "telegram",
-            "text": "오스티움 공격자는 한시간 전 쯤부터 토네이도캐시로 세탁 시작. 돌려받기는 글른 것 같네요.\n\nhttps://arbiscan.io/address/0x16cdda08407da70c24dea96cf95d8168dbc1704d",
-            "link": "https://t.me/fireant_crypto/42872"
-          },
-          {
-            "type": "telegram",
-            "text": "🏴 RISEx Final Call 종료 및 포인트 프로그램 시작\n\n✍ 비탈릭에게 투자받았던 RiseX의 Final Call이 종료됩니다. 상금풀은 25,000달러까지 증가했고 우승자는 다음주 쯤 공개될 예정이라고 하네요. 총 거래량이 꽤나 많이 나오고 참여자도 많았네요. \n그리고 코파운더 Sam이 말했던 포인트 프로그램이 7월 20일 월요일부터 진행할 예정",
-            "link": "https://t.me/enjoymyhobby/96713"
-          }
-        ]
-      },
-      {
-        "word": "제공",
-        "count": 22,
-        "trend": "rising",
-        "score": 484.0,
-        "evidence": [
-          {
-            "type": "telegram",
-            "text": "🎤 DSCVR & 취미생활방 AMA\n\n🪙 취미생활방에서 AI 기반 Web3 인텔리전스 플랫폼 DSCVR와 AMA를 진행합니다.\nDSCVR는 온체인 소셜 플랫폼에서 출발해, 현재는 AI와 커뮤니티 집단지성을 결합하여 Web3 정보를 발견하고 분석할 수 있는 인텔리전스 허브로 확장하고 있는 프로젝트입니다. 이번 AMA에는 DSCVR 공동창업자 Rick 님이 게",
-            "link": "https://t.me/marshallog/22903"
-          },
-          {
-            "type": "telegram",
-            "text": "🇻🇨 Neutrl 프로젝트 구조 심층분석\n\n✅ Neutrl 수익구조와 전략에 대해 설명드렸었는데 전체적인 구조를 심층분석해보겠습니다.\n\n🎉 사용자\n🟢스테이블 예치 후 NUSD수령\n🟢수익을 원하는 사용자는 NUSD를 스테이킹 해 sNUSD 수령\n🟢sNUSD는 Neutrl이 운용수익이 쌓이면서 자연스럽게 가치 상승 -> sNUSD를 통해 수익실현\n🟢추후 Def",
-            "link": "https://t.me/enjoymyhobby/96703"
-          },
-          {
-            "type": "telegram",
-            "text": "✅ JTX is now Live! : Link\n\nJTX가 정식으로 오픈을 했습니다!\n\n이제 JTX에서 밈코인, 주식, 각종 자산을 거래할 수 있습니다.\n\n• 현재는 현물, 주식 거래만 가능\n• 선물 거래와 예측 마켓도 순차적으로 오픈\n• Docs와 공식 문서들도 점차 공개 예정\n\n이번 웨이브에서는 웨이트리스트 추천 순위 상위 1,000명이 지금부터 JTX를",
-            "link": "https://t.me/airdrop_kor/21058"
-          }
-        ]
-      },
-      {
-        "word": "체인",
-        "count": 31,
-        "trend": "rising",
-        "score": 480.5,
-        "evidence": [
-          {
-            "type": "telegram",
-            "text": "🎤 DSCVR & 취미생활방 AMA\n\n🪙 취미생활방에서 AI 기반 Web3 인텔리전스 플랫폼 DSCVR와 AMA를 진행합니다.\nDSCVR는 온체인 소셜 플랫폼에서 출발해, 현재는 AI와 커뮤니티 집단지성을 결합하여 Web3 정보를 발견하고 분석할 수 있는 인텔리전스 허브로 확장하고 있는 프로젝트입니다. 이번 AMA에는 DSCVR 공동창업자 Rick 님이 게",
-            "link": "https://t.me/marshallog/22903"
-          },
-          {
-            "type": "telegram",
-            "text": "🙃 $SKHYx, 맨틀 토큰화 주식 시장 상장\n\n✅ SK하이닉스의 토큰화주식 $SKHYx가 맨틀에서 거래가 가능합니다.\n\n📂 주요 내용\n🟢플럭션을 통해 연중무휴 24시간 거래 가능\n🟢Atomic RFQ 기반으로 슬리피지, 부분체결 없이 발행사 직접체결\n🟢플럭션 포인트+xPoints 이중파밍 가능\n\n✍ 이번 상장도 맨틀이 발빠르게 대응하네요. SK하이닉스도 ",
-            "link": "https://t.me/enjoymyhobby/96712"
-          },
-          {
-            "type": "telegram",
-            "text": "🙃 맨틀 토큰화 베이스 전략 규모 L2 1위 달성\n\n✅ 맨틀 체인을 통해 토큰화 자산을 활용한 전략 규모가 L2 1위를 달성했습니다.\n\n📂 주요 내용\n🟢토큰화 액티브 전략 규모 약 1억 1,640만 달러 달성\n🟢이더리움 L2 중 1위, 전체 네트워크 중 3위\n\n✍ 토큰화 자산을 활용한 전략규모 중 맨틀체인을 활용한 부분이 L2에서 1위를 차지했네요. RWA",
-            "link": "https://t.me/enjoymyhobby/96714"
-          }
-        ]
-      },
-      {
         "word": "시장",
-        "count": 47,
+        "count": 44,
         "trend": "rising",
-        "score": 441.8,
+        "score": 74.46,
         "evidence": [
           {
             "type": "telegram",
@@ -2197,16 +2185,39 @@
           },
           {
             "type": "telegram",
-            "text": "📌 실시간 코인시장 급등, 급락 TOP 10 코인\n\nhttps://antinfo.io/",
-            "link": "https://t.me/fireant_crypto/42870"
+            "text": "[AI] 뉴스\n\n알파카, 토큰화 시장 및 AI 금융 인프라 가속화 위해 1억 3,500만 달러 유치\n알파카가 토큰화 시장과 AI 금융 인프라를 가속화하기 위해 1억 3,500만 달러를 유치했다.\n\n원문보기 ㅣ개미투자정보 ANTINFO\n출처 : Cointelegraph · 00:09 KST  #AI",
+            "link": "https://t.me/fireant_crypto/42883"
           }
         ]
       },
       {
-        "word": "기반",
-        "count": 27,
+        "word": "거래",
+        "count": 42,
         "trend": "rising",
-        "score": 364.5,
+        "score": 70.56,
+        "evidence": [
+          {
+            "type": "telegram",
+            "text": "📌 삼전닉스 레버리지…ETF 투자 규제 강화 \n\n오늘 삼성전자, SK 하이닉스 단일종목 레버리지 상품이 규제되었습니다. 이 규제안을 보면서 가장 먼저 든 생각은 \n\n\"한국거래소 선물거래 지원은 어렵겠나..?\" 라는 생각이 파바박 들었네요. \n\n크립토에서는 안전한 레버리지 10배 딸깍 하는데, 이 현상을 보면 우리가 얼마나 레버리지에 노출되어있는지 여실히 드",
+            "link": "https://t.me/fireant_crypto/42881"
+          },
+          {
+            "type": "telegram",
+            "text": "📌 불개미 일일시황 | 2026.07.17 (금)\n\n1️⃣ BTC ETH 유출입\n• BTC: +$79.1M\n• ETH: -$28M\n• ETF 데이터는 마지막 거래일 기준\n\n2️⃣ 미결제약정 추이 (24시간 기준)\n• BTC 24시간: -0.74%\n• ETH 24시간: -5.50%\n\n3️⃣ DAT 추이\n• WEEKLY NET INFLOW: $-85.45M\n\n",
+            "link": "https://t.me/fireant_crypto/42886"
+          },
+          {
+            "type": "telegram",
+            "text": "📕취미생활방 리서치 Written by \"SB\"\n\n📌2026년 7월 15일(수) - CPI는 식었는데, IBM은 AI에 통째로 먹혔다\n\n✅ 밤새 뉴욕은 CPI 서프라이즈에 안도랠리로 화답했다. 그런데 같은 날 25% 폭락한 IBM이 그 랠리의 진짜 엔진을 먼저 보여줬다 — 돈은 지금도 AI로만 몰린다.\n\n📂 CPI 서프라이즈, 하루 만에 공포를 삼켰다\n🟢6",
+            "link": "https://t.me/enjoymyhobby/96691"
+          }
+        ]
+      },
+      {
+        "word": "참여",
+        "count": 31,
+        "trend": "rising",
+        "score": 50.58,
         "evidence": [
           {
             "type": "telegram",
@@ -2215,45 +2226,73 @@
           },
           {
             "type": "telegram",
-            "text": "상승장에서는 모든게 좋아보이는 장밋빛 전망만이 보입니다 \n\n하락장에서는 모든게 안 좋아보이고, 더 최악이고 제각각의 이유로 하락할 이유들밖에 보이지 않습니다\n\n하지만 시간이 지나면 어느순간 모든게 노이즈가 됩니다\n\n본인이 생각하는 BULL/BASE/BEAR 케이스를 놓고 그 가격대에 맞춰서 대응해야지, 그때그때 들이닥치는 새로운 정보를 기반으로 해봐야 혼란",
-            "link": "https://t.me/justdegenguy/4105"
+            "text": "📌 책임없는 쾌락 말고.... 손실없는 트레이딩 연습 - ACETRADE\n\n이번에 밈랜드 친구들이 한국에 왔을때 Memeland에서 빌딩중인 모의투자플랫폼 Acetrade에 대하여 이야기를 나눴었습니다. AceTrade가 런칭 6개월을 기념하여 1억 5천만원을 걸고 모의투자대회를 진행합니다. \n\nAceTrade는 모의투자로 실력을 검증하면, AceTrade",
+            "link": "https://t.me/fireant_crypto/42882"
           },
           {
             "type": "telegram",
-            "text": "🎤 DSCVR & 취미생활방 AMA  🪙 취미생활방에서 AI 기반 Web3 인텔리전스 플랫폼 DSCVR와 AMA를 진행합니다. DSCVR는 온체인 소셜 플랫폼에서 출발해, 현재는 AI와 커뮤니티 집단지성을 결합하여 Web3 정보를 발견하고 분석할 수 있는 인텔리전스 허브로 확장하고 있는 프로젝트입니다. 이번 AMA에는 DSCVR 공동창업자 Rick 님이 게",
-            "link": "https://t.me/enjoymyhobby/96705"
+            "text": "📌 실시간 한국거래소 거래량, 상승률 TOP 10\n\nbonk, egg, HPP, ES, ZTX, STAT, H, WIKEN 등 상승률 상위에 올라와있는 프로젝트는 대부분 다 상장폐지가 예정되어있거나 유의종목으로 지정된 종목들입니다. \n\n마지막 지뢰찾기 게임에 굳이 참여할 필요는 없을 것 같음. \n\n한국거래소 대시보드 : https://antinfo.io/k",
+            "link": "https://t.me/fireant_crypto/42895"
           }
         ]
       },
       {
-        "word": "필요",
-        "count": 19,
+        "word": "달러",
+        "count": 34,
         "trend": "rising",
-        "score": 361.0,
+        "score": 50.26,
+        "evidence": [
+          {
+            "type": "telegram",
+            "text": "[AI] 뉴스\n\n알파카, 토큰화 시장 및 AI 금융 인프라 가속화 위해 1억 3,500만 달러 유치\n알파카가 토큰화 시장과 AI 금융 인프라를 가속화하기 위해 1억 3,500만 달러를 유치했다.\n\n원문보기 ㅣ개미투자정보 ANTINFO\n출처 : Cointelegraph · 00:09 KST  #AI",
+            "link": "https://t.me/fireant_crypto/42883"
+          },
+          {
+            "type": "telegram",
+            "text": "[거시경제] 뉴스\n\n트럼프 미디어, 금융사에 할인된 API 제안\n트럼프 미디어가 금융사에 월 6만 달러의 할인된 API 계획을 제안했다.\n\n원문보기 ㅣ개미투자정보 ANTINFO\n출처 : Financial Juice · 20:58 KST  #거시",
+            "link": "https://t.me/fireant_crypto/42892"
+          },
+          {
+            "type": "telegram",
+            "text": "[거시경제] 뉴스  트럼프 미디어, 금융사에 할인된 API 제안 트럼프 미디어가 금융사에 월 6만 달러의 할인된 API 계획을 제안했다.  원문보기 ㅣ개미투자정보 ANTINFO 출처 : Financial Juice · 20:58 KST  #거시",
+            "link": "https://t.me/fireant_crypto/42893"
+          }
+        ]
+      },
+      {
+        "word": "예정",
+        "count": 26,
+        "trend": "rising",
+        "score": 50.07,
+        "evidence": [
+          {
+            "type": "telegram",
+            "text": "오늘 k3 모델 성능으로 핫한 중국모델 kimi는 예전에 채팅으로 설득 챌린지하면 1불에 구독 가능했어서 (근데 한 10분 계속 찡얼대면서 설득해야함) 써봤는데 그 떄 당시에는 좀 구렸음. 지금은 챌린지가 되는 지는 모르겠는데 안될듯? \n\n그래서 구독은 안해보고 오늘 Venice에서 써볼 수 있길래 써봤는데, 벤치마크처럼 클로드를 따는 수준은 아니지만 그래",
+            "link": "https://t.me/justdegenguy/4102"
+          },
+          {
+            "type": "telegram",
+            "text": "📌 실시간 한국거래소 거래량, 상승률 TOP 10\n\nbonk, egg, HPP, ES, ZTX, STAT, H, WIKEN 등 상승률 상위에 올라와있는 프로젝트는 대부분 다 상장폐지가 예정되어있거나 유의종목으로 지정된 종목들입니다. \n\n마지막 지뢰찾기 게임에 굳이 참여할 필요는 없을 것 같음. \n\n한국거래소 대시보드 : https://antinfo.io/k",
+            "link": "https://t.me/fireant_crypto/42895"
+          },
+          {
+            "type": "telegram",
+            "text": "🇰🇷 정부부처, 오늘 16시에 긴급 삼전닉스 레버리지 ETF 에 대한 보완책 발표 예정\n\n얼마 전 이재명 대통령이 보완책을 강구하라는 말이 있었는데, 바로 오늘 4시에 보완대책을 발표한다고 합니다. 3시부터 시장상황점검회의를 열어 4시에 논의 결과를 발표할 예정이라고 합니다. 장이 끝난 후니 변동성에 주의하시기 바랍니다.\n\n#KOSPI #국장",
+            "link": "https://t.me/enjoymyhobby/96697"
+          }
+        ]
+      },
+      {
+        "word": "진행",
+        "count": 29,
+        "trend": "rising",
+        "score": 46.72,
         "evidence": [
           {
             "type": "telegram",
             "text": "🎤 DSCVR & 취미생활방 AMA\n\n🪙 취미생활방에서 AI 기반 Web3 인텔리전스 플랫폼 DSCVR와 AMA를 진행합니다.\nDSCVR는 온체인 소셜 플랫폼에서 출발해, 현재는 AI와 커뮤니티 집단지성을 결합하여 Web3 정보를 발견하고 분석할 수 있는 인텔리전스 허브로 확장하고 있는 프로젝트입니다. 이번 AMA에는 DSCVR 공동창업자 Rick 님이 게",
             "link": "https://t.me/marshallog/22903"
           },
-          {
-            "type": "telegram",
-            "text": "PloPlo WL 놓친 사람들을 위한 추가 신청\n\n기존 WL 배정은 모두 마감됐는데, 이번에 ET-Friends-001 WL을 추가로 받을 수 있는 신청이 열림\n\nPloPlo Discord의 Pioneer Ab 역할이나 Ritual Discord의 Ritualist, Ritty, Radiant Ritualist 역할을 보유한 사람, 공식 Quest 완료자도",
-            "link": "https://t.me/justdegenguy/4099"
-          },
-          {
-            "type": "telegram",
-            "text": "메타마스크의 ERC-7715가 보안 측면에서 꽤 괜찮은 기능인듯\n\n디파이를 오래 쓰다 보면 사용하지 않는 컨트랙트에도 토큰 어프로브가 계속 남아있는데, 해당 컨트랙트가 나중에 해킹되면 예전에 승인해둔 지갑까지 같이 위험해질 수 있음.\n\n이번 Revoke.cash Ultimate는 메타마스크의 ERC-7715를 활용해서 기존 어프로브를 취소할 수 있는 권한만",
-            "link": "https://t.me/justdegenguy/4106"
-          }
-        ]
-      },
-      {
-        "word": "실제",
-        "count": 18,
-        "trend": "rising",
-        "score": 324.0,
-        "evidence": [
           {
             "type": "telegram",
             "text": "📌 책임없는 쾌락 말고.... 손실없는 트레이딩 연습 - ACETRADE\n\n이번에 밈랜드 친구들이 한국에 왔을때 Memeland에서 빌딩중인 모의투자플랫폼 Acetrade에 대하여 이야기를 나눴었습니다. AceTrade가 런칭 6개월을 기념하여 1억 5천만원을 걸고 모의투자대회를 진행합니다. \n\nAceTrade는 모의투자로 실력을 검증하면, AceTrade",
@@ -2263,11 +2302,75 @@
             "type": "telegram",
             "text": "🇻🇨 Neutrl 프로젝트 구조 심층분석\n\n✅ Neutrl 수익구조와 전략에 대해 설명드렸었는데 전체적인 구조를 심층분석해보겠습니다.\n\n🎉 사용자\n🟢스테이블 예치 후 NUSD수령\n🟢수익을 원하는 사용자는 NUSD를 스테이킹 해 sNUSD 수령\n🟢sNUSD는 Neutrl이 운용수익이 쌓이면서 자연스럽게 가치 상승 -> sNUSD를 통해 수익실현\n🟢추후 Def",
             "link": "https://t.me/enjoymyhobby/96703"
+          }
+        ]
+      },
+      {
+        "word": "추가",
+        "count": 25,
+        "trend": "rising",
+        "score": 44.64,
+        "evidence": [
+          {
+            "type": "telegram",
+            "text": "PloPlo WL 놓친 사람들을 위한 추가 신청\n\n기존 WL 배정은 모두 마감됐는데, 이번에 ET-Friends-001 WL을 추가로 받을 수 있는 신청이 열림\n\nPloPlo Discord의 Pioneer Ab 역할이나 Ritual Discord의 Ritualist, Ritty, Radiant Ritualist 역할을 보유한 사람, 공식 Quest 완료자도",
+            "link": "https://t.me/justdegenguy/4099"
           },
           {
             "type": "telegram",
-            "text": "Hotstuff 가 만들어 내려는 Agentic Finance\n\nHotstuff 의 Founder 인 mks 가 Intelligence and Execution Layer for Agentic Finance 란 제목의 Article 을 게시했습니다.\n\nHotstuff 는 Agent 를 위한 지식/실행 레이어를 구축 중\n기존의 분리된 연구/거래/결제/뱅킹 인",
-            "link": "https://t.me/pgyinfo/14253"
+            "text": "메타마스크의 ERC-7715가 보안 측면에서 꽤 괜찮은 기능인듯\n\n디파이를 오래 쓰다 보면 사용하지 않는 컨트랙트에도 토큰 어프로브가 계속 남아있는데, 해당 컨트랙트가 나중에 해킹되면 예전에 승인해둔 지갑까지 같이 위험해질 수 있음.\n\n이번 Revoke.cash Ultimate는 메타마스크의 ERC-7715를 활용해서 기존 어프로브를 취소할 수 있는 권한만",
+            "link": "https://t.me/justdegenguy/4106"
+          },
+          {
+            "type": "telegram",
+            "text": "이번 주 한국에서 120만 명의 개인 투자자가 마진콜(추가 증거금 납입 요구)을 받았는데, 이는 한국 전체 성인 인구의 3.4%에 해당하는 수치입니다.",
+            "link": "https://t.me/justdegenguy/4107"
+          }
+        ]
+      },
+      {
+        "word": "지갑",
+        "count": 25,
+        "trend": "rising",
+        "score": 43.1,
+        "evidence": [
+          {
+            "type": "telegram",
+            "text": "PloPlo WL 놓친 사람들을 위한 추가 신청\n\n기존 WL 배정은 모두 마감됐는데, 이번에 ET-Friends-001 WL을 추가로 받을 수 있는 신청이 열림\n\nPloPlo Discord의 Pioneer Ab 역할이나 Ritual Discord의 Ritualist, Ritty, Radiant Ritualist 역할을 보유한 사람, 공식 Quest 완료자도",
+            "link": "https://t.me/justdegenguy/4099"
+          },
+          {
+            "type": "telegram",
+            "text": "메타마스크의 ERC-7715가 보안 측면에서 꽤 괜찮은 기능인듯\n\n디파이를 오래 쓰다 보면 사용하지 않는 컨트랙트에도 토큰 어프로브가 계속 남아있는데, 해당 컨트랙트가 나중에 해킹되면 예전에 승인해둔 지갑까지 같이 위험해질 수 있음.\n\n이번 Revoke.cash Ultimate는 메타마스크의 ERC-7715를 활용해서 기존 어프로브를 취소할 수 있는 권한만",
+            "link": "https://t.me/justdegenguy/4106"
+          },
+          {
+            "type": "telegram",
+            "text": "RISEx Final Call 종료 / 시즌1 시작\n\nRISEx 의 Beta 시즌 마지막 대회인 Final Call 이 종료 되었습니다\n\n3429지갑 참가\n거래량 $906M\nOI $9M\n\n거래량 $750M 을 넘어서 상금이 $25K 가 되었고, 7일 내에 우승자를 발표 한다고 합니다.\n\n이제 7/20 이면 시즌1 포인트제가 시작한다고 하네요\n\nRISEx 는",
+            "link": "https://t.me/pgyinfo/14262"
+          }
+        ]
+      },
+      {
+        "word": "사용",
+        "count": 25,
+        "trend": "rising",
+        "score": 43.1,
+        "evidence": [
+          {
+            "type": "telegram",
+            "text": "PloPlo WL 놓친 사람들을 위한 추가 신청\n\n기존 WL 배정은 모두 마감됐는데, 이번에 ET-Friends-001 WL을 추가로 받을 수 있는 신청이 열림\n\nPloPlo Discord의 Pioneer Ab 역할이나 Ritual Discord의 Ritualist, Ritty, Radiant Ritualist 역할을 보유한 사람, 공식 Quest 완료자도",
+            "link": "https://t.me/justdegenguy/4099"
+          },
+          {
+            "type": "telegram",
+            "text": "오늘 k3 모델 성능으로 핫한 중국모델 kimi는 예전에 채팅으로 설득 챌린지하면 1불에 구독 가능했어서 (근데 한 10분 계속 찡얼대면서 설득해야함) 써봤는데 그 떄 당시에는 좀 구렸음. 지금은 챌린지가 되는 지는 모르겠는데 안될듯? \n\n그래서 구독은 안해보고 오늘 Venice에서 써볼 수 있길래 써봤는데, 벤치마크처럼 클로드를 따는 수준은 아니지만 그래",
+            "link": "https://t.me/justdegenguy/4102"
+          },
+          {
+            "type": "telegram",
+            "text": "메타마스크의 ERC-7715가 보안 측면에서 꽤 괜찮은 기능인듯\n\n디파이를 오래 쓰다 보면 사용하지 않는 컨트랙트에도 토큰 어프로브가 계속 남아있는데, 해당 컨트랙트가 나중에 해킹되면 예전에 승인해둔 지갑까지 같이 위험해질 수 있음.\n\n이번 Revoke.cash Ultimate는 메타마스크의 ERC-7715를 활용해서 기존 어프로브를 취소할 수 있는 권한만",
+            "link": "https://t.me/justdegenguy/4106"
           }
         ]
       }
