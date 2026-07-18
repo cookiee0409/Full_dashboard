@@ -219,7 +219,7 @@ function chartInner(history, item, D) {
   const html = `<div class="tv-legend">${ohlcLegend(history, last, item)}</div><div class="tv-chart">${svg}<div class="tv-axis-y">${yAxis}</div><div class="tv-axis-x">${xAxis}</div><div class="tv-tooltip" hidden></div><div class="tv-ylabel" hidden></div><div class="tv-xlabel" hidden></div></div>`;
   return { html, ctx: { n, D, right, niceMin, range, step, history, item } };
 }
-function paintChart(container, history, item, D, onZoom) {
+function paintChart(container, history, item, D, onZoom, onPanStart) {
   const { html, ctx } = chartInner(history, item, D);
   container.innerHTML = html;
   if (!ctx) return;
@@ -248,6 +248,12 @@ function paintChart(container, history, item, D, onZoom) {
     xlabel.style.left = Math.max(2, Math.min(boxRect.width - 76, (cx / ctx.D.W) * boxRect.width - 38)) + 'px';
   });
   if (onZoom) svg.addEventListener('wheel', e => { e.preventDefault(); const rect = svg.getBoundingClientRect(); onZoom((e.clientX - rect.left) / rect.width, e.deltaY); }, { passive: false });
+  // preventDefault stops the drag from turning into a text/image selection.
+  if (onPanStart) svg.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;                    // left button only
+    e.preventDefault();
+    onPanStart(e.clientX, svg.getBoundingClientRect().width);
+  });
 }
 function createChart(cardEl) {
   const panel = $('.chart-panel', cardEl), titleEl = $('.chart-title', cardEl);
@@ -279,9 +285,27 @@ function createChart(cardEl) {
     const nw = Math.max(12, Math.min(n, Math.round(width * factor)));
     const ns = Math.max(0, Math.min(n - nw, Math.round(anchor - anchorFrac * nw)));
     state.view = { start: ns, end: ns + nw };
-    paintChart(panel, sliceView(), state.item, CHART_DIMS, onZoom);
+    draw();
   }
-  function draw() { paintChart(panel, sliceView(), state.item, CHART_DIMS, onZoom); }
+  function draw() { paintChart(panel, sliceView(), state.item, CHART_DIMS, onZoom, onPanStart); }
+  // Left-drag pans the view window. The move/up listeners sit on document rather
+  // than the SVG because each pan step re-renders the panel, which would destroy
+  // an SVG-bound listener halfway through the drag.
+  let pan = null;
+  function onPanStart(clientX, width) {
+    if (!state.full || !state.view || !width) return;
+    pan = { clientX, width, start: state.view.start, end: state.view.end };
+    panel.classList.add('panning');
+  }
+  document.addEventListener('mousemove', e => {
+    if (!pan || !state.full) return;
+    const total = state.full.close.length, span = pan.end - pan.start;
+    if (span <= 0) return;
+    const shift = Math.round((pan.clientX - e.clientX) * (span / pan.width));
+    const start = Math.max(0, Math.min(total - span, pan.start + shift));
+    if (start !== state.view.start) { state.view = { start, end: start + span }; draw(); }
+  });
+  document.addEventListener('mouseup', () => { if (pan) { pan = null; panel.classList.remove('panning'); } });
   async function rebuild() {
     let base; try { base = await fetchBase(); } catch { base = null; }
     if (!base) { panel.innerHTML = '<p class="empty-note">이 자산은 차트 데이터를 표시할 수 없습니다.</p>'; state.full = null; return; }
@@ -382,7 +406,34 @@ function renderRanking() { const items=[...rankingItems].sort((a,b)=>{ const av=
 async function loadRanking(isRetry) { try { const d=await api(`coins?category=${activeCategory}&limit=20`); rankingItems=d.items; renderRanking(); showCoin(d.items[0], true); updateTime('#ranking-updated'); } catch(e) { fail('#rank-rows',e,isRetry?null:()=>loadRanking(true)); } }
 function relative(pub) { const h=Math.max(0,Math.round((Date.now()-new Date(pub))/36e5)); return h<1?'방금 전':h<24?`${h}시간 전`:`${Math.round(h/24)}일 전`; }
 const IMPORTANT_NEWS_RE = /(실적|공시|수주|유상증자|자사주|인수합병|급등|급락)/;
-async function loadNews(kind,id,timeId,isRetry) { try { const d=await api('news?kind='+kind); $(id).innerHTML=d.items.map(x=>`<a class="news-row" href="${esc(x.url)}" target="_blank" rel="noopener"><div class="news-title">${kind==='stocks'&&IMPORTANT_NEWS_RE.test(x.title)?'<span class="badge-important">주요</span>':''}${esc(x.title)}</div><div class="news-meta"><span>${esc(x.source)}</span><span>·</span><span>${relative(x.published)}</span></div></a>`).join(''); updateTime(timeId); } catch(e) { fail(id,e,isRetry?null:()=>loadNews(kind,id,timeId,true)); } }
+// Headline tone drives the news border colour. This is a weighted keyword
+// heuristic, not real sentiment analysis, and it will still be wrong sometimes.
+//
+// Plain word counting was wrong often enough to be misleading: 급등 scored
+// "유가 급등에 세계 경제 덮쳐" as positive, and 성장 did the same for
+// "성장·물가·금리 삼중 압박". Two rules fix most of that — cost terms (유가,
+// 금리, 물가 …) invert, because a rise in them is a negative headline, and they
+// are matched next to the direction word so 기술주 급락 in the same sentence is
+// not swept up; and bare growth words (성장/확대/증가) are out entirely, since
+// they read positive while appearing in plainly negative framings.
+// The trailing lookahead keeps "금리인상 확률 70%→30%" out of the cost-up
+// bucket: that headline is about the odds of a hike receding, not rates rising.
+const COST_TERM = '(?:유가|금리|물가|환율|인플레|원자재|국채|유류비|관세)';
+const COST_HEDGE = '(?!\\s*(?:확률|가능성|전망|기대))';
+const NEWS_COST_UP_RE = new RegExp(COST_TERM + '[^.,]{0,6}(?:급등|상승|인상|치솟|폭등|오름|급증)' + COST_HEDGE, 'g');
+const NEWS_COST_DOWN_RE = new RegExp(COST_TERM + '[^.,]{0,6}(?:급락|하락|인하|내림|안정)' + COST_HEDGE, 'g');
+const NEWS_POS_RE = /(상승|급등|강세|호조|개선|회복|최고치|신고가|돌파|흑자|수주|호실적|서프라이즈|반등|완화|타결|승인|낙관|기대감|훈풍|순매수|상향|유입|랠리|호황|수혜)/g;
+const NEWS_NEG_RE = /(하락|급락|약세|부진|악화|위기|우려|리스크|적자|손실|폭락|최저|하향|경고|제재|충돌|갈등|전쟁|파산|디폴트|침체|순매도|청산|해킹|유출|불안|둔화|피소|기소|공매도|셧다운|마이너스|압박|고비|긴장|위축|경색|덮쳐|흔들)/g;
+const TONE_LABEL = { pos: '긍정적', neg: '부정적', neu: '중립·불확실' };
+const newsTone = title => {
+  const count = re => (title.match(re) || []).length;
+  // Cost moves are weighted above the generic words they contain, so the
+  // inverted reading wins the tie against its own direction word.
+  const pos = count(NEWS_POS_RE) + count(NEWS_COST_DOWN_RE) * 2;
+  const neg = count(NEWS_NEG_RE) + count(NEWS_COST_UP_RE) * 2;
+  return pos > neg ? 'pos' : neg > pos ? 'neg' : 'neu';
+};
+async function loadNews(kind,id,timeId,isRetry) { try { const d=await api('news?kind='+kind); $(id).innerHTML=d.items.map(x=>{const tone=newsTone(x.title);return `<a class="news-row tone-${tone}" href="${esc(x.url)}" target="_blank" rel="noopener" title="시장 영향 ${TONE_LABEL[tone]} (키워드 추정)"><div class="news-title">${kind==='stocks'&&IMPORTANT_NEWS_RE.test(x.title)?'<span class="badge-important">주요</span>':''}${esc(x.title)}</div><div class="news-meta"><span>${esc(x.source)}</span><span>·</span><span>${relative(x.published)}</span></div></a>`}).join(''); updateTime(timeId); } catch(e) { fail(id,e,isRetry?null:()=>loadNews(kind,id,timeId,true)); } }
 async function loadFear() { try { const d=await api('fear-greed'); $('#gauge-fill').parentElement.style.setProperty('--value',d.value); $('#fear-value').textContent=d.value; $('#fear-label').textContent=d.label; } catch(e) { $('#fear-label').textContent='지수 연결 실패'; } }
 
 function kstToday() { const d = new Date(Date.now() + 9*36e5); return { date: d.toISOString().slice(0,10), weekday: ['sun','mon','tue','wed','thu','fri','sat'][d.getUTCDay()] }; }
@@ -447,8 +498,21 @@ function showTgView(link) {
   $('#tgview-panel').innerHTML = `<iframe class="tg-embed" src="${esc(src)}" loading="lazy" title="텔레그램 원문"></iframe>`;
   $('#tgview-updated').textContent = link.replace('https://t.me/', '');
 }
-const briefRow = h => `<div class="news-row brief-row" role="button" tabindex="0" data-link="${esc(h.link)}"><div class="news-title">${esc(h.text)}</div><div class="news-meta"><span>${esc(h.channel || '')}</span><span>·</span><span>${relative(h.ts)}</span>${h.cluster_size > 1 ? `<span class="brief-cluster">${h.cluster_size}건 언급</span>` : ''}<a class="link-icon" href="${esc(h.link)}" target="_blank" rel="noopener" title="t.me에서 열기" onclick="event.stopPropagation()">↗</a></div></div>`;
-function bindBriefRows(root) { $$('.brief-row', root).forEach(row => { const open = () => showTgView(row.dataset.link); row.onclick = open; row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }; }); }
+const briefRow = h => `<div class="news-row brief-row" role="button" tabindex="0" data-link="${esc(h.link)}" data-channel="${esc(h.channel || '')}"><div class="news-title">${esc(h.text)}</div><div class="news-meta"><span>${esc(h.channel || '')}</span><span>·</span><span>${relative(h.ts)}</span>${h.cluster_size > 1 ? `<span class="brief-cluster">${h.cluster_size}건 언급</span>` : ''}<a class="link-icon" href="${esc(h.link)}" target="_blank" rel="noopener" title="t.me에서 열기" onclick="event.stopPropagation()">↗</a></div></div>`;
+// syncChannel: a post picked in 인기순/최신순 also fills the 채널 글 card beside
+// it with that post's channel, so the surrounding thread is one click away. Rows
+// already inside 채널 글 pass it as false — they are that channel's posts.
+function bindBriefRows(root, syncChannel) {
+  $$('.brief-row', root).forEach(row => {
+    const open = () => {
+      const channel = row.dataset.channel;
+      if (syncChannel && channel && (briefingData?.crypto_brief?.raw_by_channel || {})[channel]) showChannelPosts(channel);
+      showTgView(row.dataset.link);
+    };
+    row.onclick = open;
+    row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
+  });
+}
 // 채널별 mode: left card lists channels; picking one fills the center card with
 // that channel's recent posts (right card embeds a clicked post).
 function showChannelPosts(channel) {
@@ -487,7 +551,7 @@ function renderBriefing() {
     : [...(brief.highlights || [])].sort((a, b) =>
       (b.cluster_size || 0) - (a.cluster_size || 0) || new Date(b.ts) - new Date(a.ts)).slice(0, 8);
   $('#brief-list').innerHTML = posts.length ? posts.map(briefRow).join('') : '<p class="empty-note">아직 수집된 브리핑이 없습니다.</p>';
-  bindBriefRows($('#brief-list'));
+  bindBriefRows($('#brief-list'), true);
 }
 // 인기순 · 최신순 · 채널별 all render from the one snapshot held in
 // `briefingData`, so the three views can never disagree about what "최신" is.
