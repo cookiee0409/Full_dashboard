@@ -643,7 +643,7 @@ def meme_mentions():
 
 
 # --- Unified OHLC history so every asset (stock, index, hyperliquid, coin,
-# DEX memecoin) feeds the SAME candlestick chart, at 1h / 4h / 1d resolution.
+# DEX memecoin) feeds the SAME candlestick chart, at 1m / 15m / 1h / 4h / 1d resolution.
 # 1w / 1M are aggregated on the client from 1d. ---
 GECKOTERMINAL_NETWORK = {"solana": "solana", "ethereum": "eth", "binance-smart-chain": "bsc",
                          "base": "base", "robinhood": "robinhood"}
@@ -684,8 +684,9 @@ def _finalize(series: dict, intraday: bool) -> dict:
 
 
 def yahoo_history(symbol: str, interval: str):
-    """Yahoo chart for stocks/indices/FX. Intraday uses 60m bars (4h aggregated x4)."""
-    iv, rng = {"1h": ("60m", "6mo"), "4h": ("60m", "1y"), "1d": ("1d", "2y")}[interval]
+    """Yahoo chart for stocks/indices/FX, including short intraday candles."""
+    iv, rng = {"1m": ("1m", "5d"), "15m": ("15m", "1mo"),
+               "1h": ("60m", "6mo"), "4h": ("60m", "1y"), "1d": ("1d", "2y")}[interval]
     url = "https://query1.finance.yahoo.com/v8/finance/chart/" + quote(symbol) + f"?range={rng}&interval={iv}"
     result = fetch_json(url)["chart"]["result"][0]
     timestamps = result.get("timestamp") or []
@@ -706,7 +707,8 @@ def yahoo_history(symbol: str, interval: str):
 
 def hyperliquid_history(label: str, interval: str):
     asset = HYPERLIQUID_ASSETS[label]
-    span_ms = {"1h": 60 * 86400000, "4h": 240 * 86400000, "1d": 365 * 86400000}[interval]
+    span_ms = {"1m": 2 * 86400000, "15m": 30 * 86400000, "1h": 60 * 86400000,
+               "4h": 240 * 86400000, "1d": 365 * 86400000}[interval]
     end = int(time.time() * 1000)
     rows = fetch_json_post("https://api.hyperliquid.xyz/info",
                             {"type": "candleSnapshot", "req": {"coin": asset["coin"], "interval": interval,
@@ -719,7 +721,7 @@ def hyperliquid_history(label: str, interval: str):
     return _finalize(series, interval != "1d")
 
 
-BINANCE_INTERVAL = {"1h": "1h", "4h": "4h", "1d": "1d"}
+BINANCE_INTERVAL = {"1m": "1m", "15m": "15m", "1h": "1h", "4h": "4h", "1d": "1d"}
 
 
 def binance_klines(ticker: str, interval: str):
@@ -735,9 +737,9 @@ def binance_klines(ticker: str, interval: str):
 
 
 def coingecko_ohlc(coin_id: str, interval: str = "1d"):
-    """Fallback coin OHLC when Binance has no USDT pair. Free tier has no true
-    1h; day counts pick the finest granularity CoinGecko offers per range."""
-    days = {"1h": 1, "4h": 7, "1d": 365}[interval]
+    """Fallback coin OHLC when Binance has no USDT pair. Free-tier granularity
+    is coarser than the requested short interval for some ranges."""
+    days = {"1m": 1, "15m": 1, "1h": 1, "4h": 7, "1d": 365}[interval]
     rows = fetch_json("https://api.coingecko.com/api/v3/coins/" + quote(coin_id)
                       + f"/ohlc?vs_currency=usd&days={days}")
     intraday = interval != "1d"
@@ -761,7 +763,8 @@ def geckoterminal_history(chain: str, address: str, interval: str = "1d"):
     network = GECKOTERMINAL_NETWORK.get(chain)
     if not network:
         raise ValueError("Unsupported chain: " + str(chain))
-    timeframe, aggregate = {"1h": ("hour", 1), "4h": ("hour", 4), "1d": ("day", 1)}[interval]
+    timeframe, aggregate = {"1m": ("minute", 1), "15m": ("minute", 15),
+                            "1h": ("hour", 1), "4h": ("hour", 4), "1d": ("day", 1)}[interval]
     pools = fetch_json(f"https://api.geckoterminal.com/api/v2/networks/{network}/tokens/"
                        + quote(address) + "/pools?page=1")
     pool_rows = pools.get("data") or []
@@ -849,16 +852,16 @@ def fetch_xml(url: str):
             return ET.fromstring(response.read())
 
 
-def news(query: str, limit: int = 9):
+def news(query: str, limit: int = 30):
     url = "https://news.google.com/rss/search?q=" + quote(query) + "&hl=ko&gl=KR&ceid=KR:ko"
     root = fetch_xml(url)
     items = []
-    for item in root.findall("./channel/item")[:limit]:
+    for rank, item in enumerate(root.findall("./channel/item")[:limit], start=1):
         title = item.findtext("title", "")
         source = item.find("source")
         items.append({"title": re.sub(r"\s+-\s+[^-]+$", "", title), "url": item.findtext("link", "#"),
                       "source": source.text if source is not None else "Google News",
-                      "published": item.findtext("pubDate", "")})
+                      "published": item.findtext("pubDate", ""), "popularRank": rank})
     return {"items": items, "updatedAt": int(time.time())}
 
 
@@ -938,11 +941,12 @@ class Handler(SimpleHTTPRequestHandler):
                 data, ttl = {"items": [hyperliquid_quote(l) for l in labels], "updatedAt": int(time.time())}, 60
             elif parsed.path == "/api/history":
                 interval = params.get("interval", ["1d"])[0]
-                if interval not in ("1h", "4h", "1d"):
+                if interval not in ("1m", "15m", "1h", "4h", "1d"):
                     interval = "1d"
+                history_ttl = {"1m": 30, "15m": 60}.get(interval, 300)
                 key = "hist:" + interval + ":" + "|".join(params.get(k, [""])[0]
-                                                           for k in ("hl", "chain", "address", "stock", "coin"))
-                data, ttl = cached(key, 300, lambda: asset_history(interval, params)), 300
+                                                           for k in ("hl", "chain", "address", "stock", "coin", "sym"))
+                data, ttl = cached(key, history_ttl, lambda: asset_history(interval, params)), history_ttl
             else: return self.json({"error": "Not found"}, 404)
             self.json(data, ttl=ttl)
         except Exception as error:

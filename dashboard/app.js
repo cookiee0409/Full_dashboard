@@ -119,13 +119,13 @@ function lineChartWithAxes(values) {
 }
 
 // ===== TradingView-style candlestick chart (independent per-tab instances) =====
-// Data is fetched per interval from /api/history (1h/4h/1d); 주/월 are aggregated
+// Data is fetched per interval from /api/history (1m/15m/1h/4h/1d); 주/월 are aggregated
 // from the 1d series. A view window (start,end) over the full series drives the
 // period buttons AND wheel zoom. Crosshair shows a floating OHLCV tooltip plus a
 // precise price label on the Y axis.
-const SERVER_INTERVAL = { '1h': '1h', '4h': '4h', day: '1d', week: '1d', month: '1d' };
+const SERVER_INTERVAL = { '1m': '1m', '15m': '15m', '1h': '1h', '4h': '4h', day: '1d', week: '1d', month: '1d' };
 const HL_SYMBOLS = new Set(['HYPE', 'SAMSUNG', 'SKHYNIX', 'LIT']);
-const RANGE_DAYS = { '1m': 31, '3m': 93, '6m': 186 };
+const RANGE_DAYS = { '24h': 1, '1m': 31, '3m': 93, '6m': 186 };
 const CHART_DIMS = { W: 720, H: 300, padR: 66, top: 12, priceH: 196, volTop: 236, volBottom: 280 };
 const MODAL_DIMS = { W: 1120, H: 560, padR: 74, top: 14, priceH: 392, volTop: 462, volBottom: 540 };
 const itemKey = item => String(item.id || item.symbol || item.name);
@@ -272,7 +272,8 @@ function createChart(cardEl) {
     const days = RANGE_DAYS[state.range] || 93;
     const cutoff = parseBarDate(state.full.dates[n - 1]).getTime() - days * 864e5;
     let start = 0; for (let i = 0; i < n; i++) { if (parseBarDate(state.full.dates[i]).getTime() >= cutoff) { start = i; break; } }
-    if (n - start < 5) start = Math.max(0, n - 5);
+    const minBars = state.range === '24h' ? 2 : 5;
+    if (n - start < minBars) start = Math.max(0, n - minBars);
     state.view = { start, end: n };
   }
   function sliceView() {
@@ -306,23 +307,41 @@ function createChart(cardEl) {
     if (start !== state.view.start) { state.view = { start, end: start + span }; draw(); }
   });
   document.addEventListener('mouseup', () => { if (pan) { pan = null; panel.classList.remove('panning'); } });
-  async function rebuild() {
+  let token = 0;
+  async function rebuild(expectedToken) {
+    const expectedInterval = state.interval, expectedItem = state.item;
     let base; try { base = await fetchBase(); } catch { base = null; }
+    if (expectedToken !== token || expectedInterval !== state.interval || expectedItem !== state.item) return;
     if (!base) { panel.innerHTML = '<p class="empty-note">이 자산은 차트 데이터를 표시할 수 없습니다.</p>'; state.full = null; return; }
     state.full = state.interval === 'week' ? aggregateWeekMonth(base, 'week') : state.interval === 'month' ? aggregateWeekMonth(base, 'month') : base;
     setViewFromRange(); draw();
   }
-  let token = 0;
   async function setChart(item) {
     if (!item) return;
     state.item = item;
     titleEl.textContent = `${item.name}${item.symbol && item.symbol !== item.name ? ' · ' + item.symbol : ''}`;
     if (item.history?.close?.length > 1) state.cache.set(`${itemKey(item)}:1d`, item.history);
     panel.innerHTML = '<p class="empty-note">불러오는 중…</p>';
-    const my = ++token; await rebuild(); if (my !== token) return;   // superseded
+    const my = ++token; await rebuild(my); if (my !== token) return;   // superseded
   }
-  $$('.chart-range-toggle button', cardEl).forEach(b => b.onclick = () => { state.range = b.dataset.range; $$('.chart-range-toggle button', cardEl).forEach(x => x.classList.toggle('active', x === b)); if (state.full) { setViewFromRange(); draw(); } });
-  $$('.chart-interval-toggle button', cardEl).forEach(b => b.onclick = async () => { state.interval = b.dataset.interval; $$('.chart-interval-toggle button', cardEl).forEach(x => x.classList.toggle('active', x === b)); if (state.item) { const my = ++token; await rebuild(); if (my !== token) return; } });
+  $$('.chart-range-toggle button', cardEl).forEach(b => b.onclick = async () => {
+    state.range = b.dataset.range;
+    $$('.chart-range-toggle button', cardEl).forEach(x => x.classList.toggle('active', x === b));
+    if (state.range === '24h' && ['day', 'week', 'month'].includes(state.interval)) {
+      state.interval = '15m';
+      $$('.chart-interval-toggle button', cardEl).forEach(x => x.classList.toggle('active', x.dataset.interval === state.interval));
+      if (state.item) { const my = ++token; await rebuild(my); if (my !== token) return; }
+    } else if (state.full) { setViewFromRange(); draw(); }
+  });
+  $$('.chart-interval-toggle button', cardEl).forEach(b => b.onclick = async () => {
+    state.interval = b.dataset.interval;
+    $$('.chart-interval-toggle button', cardEl).forEach(x => x.classList.toggle('active', x === b));
+    if (state.interval === '1m' && state.range !== '24h') {
+      state.range = '24h';
+      $$('.chart-range-toggle button', cardEl).forEach(x => x.classList.toggle('active', x.dataset.range === state.range));
+    }
+    if (state.item) { const my = ++token; await rebuild(my); if (my !== token) return; }
+  });
   $('.chart-expand', cardEl).onclick = () => {
     if (!state.full) return;
     const modal = $('#chart-modal');
@@ -433,7 +452,25 @@ const newsTone = title => {
   const neg = count(NEWS_NEG_RE) + count(NEWS_COST_UP_RE) * 2;
   return pos > neg ? 'pos' : neg > pos ? 'neg' : 'neu';
 };
-async function loadNews(kind,id,timeId,isRetry) { try { const d=await api('news?kind='+kind); $(id).innerHTML=d.items.map(x=>{const tone=newsTone(x.title);return `<a class="news-row tone-${tone}" href="${esc(x.url)}" target="_blank" rel="noopener" title="시장 영향 ${TONE_LABEL[tone]} (키워드 추정)"><div class="news-title">${kind==='stocks'&&IMPORTANT_NEWS_RE.test(x.title)?'<span class="badge-important">주요</span>':''}${esc(x.title)}</div><div class="news-meta"><span>${esc(x.source)}</span><span>·</span><span>${relative(x.published)}</span></div></a>`}).join(''); updateTime(timeId); } catch(e) { fail(id,e,isRetry?null:()=>loadNews(kind,id,timeId,true)); } }
+const NEWS_LIMIT = 9;
+const newsFeeds = {
+  stocks: { items: [], sort: 'latest', id: '#stocks-news' },
+  world: { items: [], sort: 'latest', id: '#world-news' },
+  crypto: { items: [], sort: 'latest', id: '#crypto-news' }
+};
+const newsTime = item => Date.parse(item.published) || 0;
+function renderNews(kind) {
+  const feed = newsFeeds[kind];
+  if (!feed) return;
+  const items = [...feed.items].sort(feed.sort === 'popular'
+    ? (a, b) => (a.popularRank ?? Number.MAX_SAFE_INTEGER) - (b.popularRank ?? Number.MAX_SAFE_INTEGER) || newsTime(b) - newsTime(a)
+    : (a, b) => newsTime(b) - newsTime(a) || (a.popularRank ?? 0) - (b.popularRank ?? 0));
+  $(feed.id).innerHTML = items.slice(0, NEWS_LIMIT).map(x => {
+    const tone = newsTone(x.title);
+    return `<a class="news-row tone-${tone}" href="${esc(x.url)}" target="_blank" rel="noopener" title="시장 영향 ${TONE_LABEL[tone]} (키워드 추정)"><div class="news-title">${kind==='stocks'&&IMPORTANT_NEWS_RE.test(x.title)?'<span class="badge-important">주요</span>':''}${esc(x.title)}</div><div class="news-meta"><span>${esc(x.source)}</span><span>·</span><span>${relative(x.published)}</span></div></a>`;
+  }).join('');
+}
+async function loadNews(kind,id,timeId,isRetry) { try { const d=await api('news?kind='+kind); const feed=newsFeeds[kind]; feed.id=id; feed.items=d.items||[]; renderNews(kind); updateTime(timeId); } catch(e) { fail(id,e,isRetry?null:()=>loadNews(kind,id,timeId,true)); } }
 async function loadFear() { try { const d=await api('fear-greed'); $('#gauge-fill').parentElement.style.setProperty('--value',d.value); $('#fear-value').textContent=d.value; $('#fear-label').textContent=d.label; } catch(e) { $('#fear-label').textContent='지수 연결 실패'; } }
 
 function kstToday() { const d = new Date(Date.now() + 9*36e5); return { date: d.toISOString().slice(0,10), weekday: ['sun','mon','tue','wed','thu','fri','sat'][d.getUTCDay()] }; }
@@ -586,6 +623,12 @@ $$('#brief-sort-tabs button').forEach(b => b.onclick = () => {
   briefSort = b.dataset.sort;
   $$('#brief-sort-tabs button').forEach(x => x.classList.toggle('active', x === b));
   renderBriefing();                              // same snapshot, different view
+});
+$$('.news-sort-tabs button').forEach(b => b.onclick = () => {
+  const tabs = b.closest('.news-sort-tabs'), kind = tabs.dataset.newsKind;
+  newsFeeds[kind].sort = b.dataset.newsSort;
+  $$('button', tabs).forEach(x => x.classList.toggle('active', x === b));
+  renderNews(kind);
 });
 
 function loadAll(freshBriefing = false) { loadMarket();loadStocks();loadMeme();loadRanking();loadNews('stocks','#stocks-news','#stocks-news-updated');loadNews('world','#world-news','#world-news-updated');loadNews('crypto','#crypto-news','#crypto-news-updated');loadFear();loadAirdrops();loadBriefing(freshBriefing); }
